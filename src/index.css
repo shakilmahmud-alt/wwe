@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+@layer utilities {
+  /* Custom Scrollbar for smooth spreadsheet navigation */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #111827;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #374151;
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #4b5563;
+  }
+}
+
+/* Brand specific theme backgrounds and borders */
+.bg-raw-red {
+  background-color: #dc2626;
+}
+.bg-raw-red-light {
+  background-color: #fee2e2;
+}
+.bg-raw-red-subtle {
+  background-color: #fef2f2;
+}
+.border-raw-red {
+  border-color: #ef4444;
+}
+
+.bg-sd-blue {
+  background-color: #2563eb;
+}
+.bg-sd-blue-light {
+  background-color: #dbeafe;
+}
+.bg-sd-blue-subtle {
+  background-color: #eff6ff;
+}
+.border-sd-blue {
+  border-color: #3b82f6;
+}
+
+.bg-nxt-yellow {
+  background-color: #ca8a04;
+}
+.bg-nxt-yellow-light {
+  background-color: #fef9c3;
+}
+.bg-nxt-yellow-subtle {
+  background-color: #fefce8;
+}
+.border-nxt-yellow {
+  border-color: #eab308;
+}
+
+.bg-women-purple {
+  background-color: #9333ea;
+}
+.bg-women-purple-light {
+  background-color: #f3e8ff;
+}
+
+/* Table grid styles matching Excel/Sheets */
+.excel-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.excel-table th, .excel-table td {
+  border-right: 1px solid #d1d5db;
+  border-bottom: 1px solid #d1d5db;
+}
+.dark .excel-table th, .dark .excel-table td {
+  border-right: 1px solid #374151;
+  border-bottom: 1px solid #374151;
+}
+
+/* Print optimizations */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+}
+
