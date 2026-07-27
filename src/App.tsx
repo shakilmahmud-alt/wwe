@@ -14,6 +14,7 @@ import {
   ShowPlan
 } from './types';
 import { initialEmptyState, sampleFullData } from './data/sampleRoster';
+import { saveToSupabase, loadFromSupabase, SUPABASE_TABLE_NAME } from './lib/supabase';
 import { HeaderNav } from './components/HeaderNav';
 import { RosterSpreadsheet } from './components/RosterSpreadsheet';
 import { BrandDashboard } from './components/BrandDashboard';
@@ -91,10 +92,55 @@ export default function App() {
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+      // Auto-update Supabase database in background when credentials exist
+      if (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY) {
+        saveToSupabase(appState).catch((err) => console.log('Silent Supabase auto-sync:', err));
+      }
     } catch (err) {
       console.error('Failed to save state to localStorage:', err);
     }
   }, [appState]);
+
+  const [isCloudSyncing, setIsCloudSyncing] = useState(false);
+
+  const handleSaveSupabase = async () => {
+    setIsCloudSyncing(true);
+    try {
+      const res = await saveToSupabase(appState);
+      if (res.success) {
+        alert('Successfully saved WWE Universe data to Supabase Cloud! ☁️');
+      } else {
+        alert(
+          `Failed to save to Supabase. Make sure you have created the '${SUPABASE_TABLE_NAME}' table in your Supabase SQL Editor with:\n\nCREATE TABLE IF NOT EXISTS ${SUPABASE_TABLE_NAME} (\n  id TEXT PRIMARY KEY,\n  data JSONB,\n  updated_at TIMESTAMPTZ DEFAULT NOW()\n);\n\nError: ` +
+            (res.error?.message || JSON.stringify(res.error))
+        );
+      }
+    } catch (err: any) {
+      alert('Error saving to Supabase: ' + (err?.message || err));
+    } finally {
+      setIsCloudSyncing(false);
+    }
+  };
+
+  const handleLoadSupabase = async () => {
+    setIsCloudSyncing(true);
+    try {
+      const res = await loadFromSupabase();
+      if (res.success && res.data) {
+        setAppState(res.data);
+        alert('Successfully loaded WWE Universe data from Supabase Cloud! ☁️');
+      } else {
+        alert(
+          `Failed to load from Supabase. Either no save data exists yet, or the '${SUPABASE_TABLE_NAME}' table is not created in Supabase.\n\nError: ` +
+            (res.error?.message || JSON.stringify(res.error))
+        );
+      }
+    } catch (err: any) {
+      alert('Error loading from Supabase: ' + (err?.message || err));
+    } finally {
+      setIsCloudSyncing(false);
+    }
+  };
 
   // Handlers for Superstars
   const handleAddSuperstar = (name: string, brand: BrandType, tier: TierType) => {
@@ -245,6 +291,19 @@ export default function App() {
     }));
   };
 
+  const handlePopulateDefaultSchedule = () => {
+    setAppState((prev) => {
+      const existingNames = new Set(prev.calendarEvents.map((e) => e.eventName.toLowerCase()));
+      const newEvents = sampleFullData.calendarEvents.filter(
+        (e) => !existingNames.has(e.eventName.toLowerCase())
+      );
+      return {
+        ...prev,
+        calendarEvents: [...prev.calendarEvents, ...newEvents]
+      };
+    });
+  };
+
   // Handlers for Champions
   const handleAddChampion = (entry: ChampionEntry) => {
     setAppState((prev) => ({
@@ -341,6 +400,9 @@ export default function App() {
         onExportJSON={handleExportJSON}
         onImportJSON={handleImportJSON}
         totalSuperstarsCount={appState.superstars.length}
+        onSaveSupabase={handleSaveSupabase}
+        onLoadSupabase={handleLoadSupabase}
+        isCloudSyncing={isCloudSyncing}
       />
 
       {/* Main Tab Content View */}
@@ -372,6 +434,9 @@ export default function App() {
             onMoveSuperstar={handleMoveSuperstar}
             onSaveShowPlan={handleSaveShowPlan}
             onDeleteShowPlan={handleDeleteShowPlan}
+            onAddChampion={handleAddChampion}
+            onUpdateChampion={handleUpdateChampion}
+            onDeleteChampion={handleDeleteChampion}
           />
         )}
 
@@ -388,6 +453,9 @@ export default function App() {
             onMoveSuperstar={handleMoveSuperstar}
             onSaveShowPlan={handleSaveShowPlan}
             onDeleteShowPlan={handleDeleteShowPlan}
+            onAddChampion={handleAddChampion}
+            onUpdateChampion={handleUpdateChampion}
+            onDeleteChampion={handleDeleteChampion}
           />
         )}
 
@@ -404,6 +472,9 @@ export default function App() {
             onMoveSuperstar={handleMoveSuperstar}
             onSaveShowPlan={handleSaveShowPlan}
             onDeleteShowPlan={handleDeleteShowPlan}
+            onAddChampion={handleAddChampion}
+            onUpdateChampion={handleUpdateChampion}
+            onDeleteChampion={handleDeleteChampion}
           />
         )}
 
@@ -433,6 +504,7 @@ export default function App() {
             onAddEvent={handleAddCalendarEvent}
             onToggleComplete={handleToggleCalendarComplete}
             onDeleteEvent={handleDeleteCalendarEvent}
+            onPopulateDefaultSchedule={handlePopulateDefaultSchedule}
           />
         )}
 

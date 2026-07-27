@@ -72,7 +72,7 @@ export interface CalendarEvent {
   id: string;
   month: string;
   eventName: string;
-  brand: 'RAW' | 'SmackDown' | 'NXT' | 'Joint';
+  brand: string; // Supports 'RAW', 'SmackDown', 'NXT', 'Joint', or combinations like 'RAW, SmackDown'
   type: 'PLE' | 'Weekly Show' | 'Special Event';
   date: string;
   location?: string;

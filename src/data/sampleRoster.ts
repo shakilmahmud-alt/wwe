@@ -350,18 +350,22 @@ export const sampleFullData: AppState = {
   ],
 
   champions: [
-    { id: 'ch-1', titleName: 'Undisputed WWE Championship', brand: 'SmackDown', currentChampion: 'Cody Rhodes', daysHeld: 320, defenses: 9, previousChampion: 'Roman Reigns' },
-    { id: 'ch-2', titleName: 'World Heavyweight Championship', brand: 'RAW', currentChampion: 'Gunther', daysHeld: 195, defenses: 6, previousChampion: 'Damian Priest' },
-    { id: 'ch-3', titleName: 'Intercontinental Championship', brand: 'RAW', currentChampion: 'Bron Breakker', daysHeld: 85, defenses: 4, previousChampion: 'Sami Zayn' },
-    { id: 'ch-4', titleName: 'United States Championship', brand: 'SmackDown', currentChampion: 'LA Knight', daysHeld: 110, defenses: 5, previousChampion: 'Logan Paul' },
-    { id: 'ch-5', titleName: 'Women\'s World Championship', brand: 'RAW', currentChampion: 'Rhea Ripley', daysHeld: 140, defenses: 5, previousChampion: 'Liv Morgan' },
-    { id: 'ch-6', titleName: 'WWE Women\'s Championship', brand: 'SmackDown', currentChampion: 'Nia Jax', daysHeld: 120, defenses: 4, previousChampion: 'Bayley' },
-    { id: 'ch-7', titleName: 'World Tag Team Championship', brand: 'RAW', currentChampion: 'The War Raiders', daysHeld: 60, defenses: 2, previousChampion: 'The Judgement Day' },
-    { id: 'ch-8', titleName: 'WWE Tag Team Championship', brand: 'SmackDown', currentChampion: 'Motor City Machine Guns', daysHeld: 45, defenses: 2, previousChampion: 'The Bloodline' },
-    { id: 'ch-9', titleName: 'WWE Women\'s Tag Team Championship', brand: 'Joint', currentChampion: 'Kabuki Warriors', daysHeld: 90, defenses: 3, previousChampion: 'Jade Cargill & Bianca Belair' },
-    { id: 'ch-10', titleName: 'NXT Championship', brand: 'NXT', currentChampion: 'Trick Williams', daysHeld: 150, defenses: 7, previousChampion: 'Ethan Page' },
-    { id: 'ch-11', titleName: 'NXT North American Championship', brand: 'NXT', currentChampion: 'Oba Femi', daysHeld: 210, defenses: 11, previousChampion: 'Dragon Lee' },
-    { id: 'ch-12', titleName: 'NXT Women\'s Championship', brand: 'NXT', currentChampion: 'Roxanne', daysHeld: 180, defenses: 8, previousChampion: 'Lyra Valkyria' }
+    { id: 'ch-1', titleName: 'Undisputed WWE Championship', brand: 'SmackDown', currentChampion: 'Jacob Fatu', daysHeld: 36, defenses: 2, previousChampion: 'LA Knight', acquiredDate: 'Year 1|April|Week 2' },
+    { id: 'ch-2', titleName: 'World Heavyweight Championship', brand: 'RAW', currentChampion: 'Gunther', daysHeld: 36, defenses: 2, previousChampion: 'CM Punk', acquiredDate: 'Year 1|April|Week 2' },
+    { id: 'ch-3', titleName: 'Men\'s Intercontinental Championship', brand: 'RAW', currentChampion: 'Bron Breakker', daysHeld: 379, defenses: 12, previousChampion: 'Sami Zayn', acquiredDate: 'Year 1|May|Week 1' },
+    { id: 'ch-4', titleName: 'Men\'s United States Championship', brand: 'SmackDown', currentChampion: 'Carmelo Hayes', daysHeld: 134, defenses: 6, previousChampion: 'Randy Orton', acquiredDate: 'Year 1|January|Week 1' },
+    { id: 'ch-5', titleName: 'Women\'s World Championship', brand: 'RAW', currentChampion: 'Rhea Ripley', daysHeld: 379, defenses: 11, previousChampion: 'Liv Morgan', acquiredDate: 'Year 1|May|Week 1' },
+    { id: 'ch-6', titleName: 'WWE Women\'s Championship', brand: 'SmackDown', currentChampion: 'Jade Cargill', daysHeld: 36, defenses: 2, previousChampion: 'Naomi', acquiredDate: 'Year 1|April|Week 2' },
+    { id: 'ch-7', titleName: 'World Tag Team Championship', brand: 'RAW', currentChampion: 'The War Raiders', daysHeld: 36, defenses: 2, previousChampion: 'The New Day', acquiredDate: 'Year 1|April|Week 2' },
+    { id: 'ch-8', titleName: 'WWE Tag Team Championship', brand: 'SmackDown', currentChampion: 'Wyatt Sicks', daysHeld: 103, defenses: 4, previousChampion: 'Brothers of Dest.', acquiredDate: 'Year 1|February|Week 1' },
+    { id: 'ch-9', titleName: 'WWE Women\'s Tag Team Championship', brand: 'Joint', currentChampion: 'Kabuki Warriors', daysHeld: 36, defenses: 2, previousChampion: 'Uto & Becky', acquiredDate: 'Year 1|April|Week 2' },
+    { id: 'ch-10', titleName: 'NXT Championship', brand: 'NXT', currentChampion: 'Trick Williams', daysHeld: 379, defenses: 10, previousChampion: 'Ethan Page', acquiredDate: 'Year 1|May|Week 1' },
+    { id: 'ch-11', titleName: 'Men\'s NXT NA Championship', brand: 'NXT', currentChampion: 'Oba Femi', daysHeld: 256, defenses: 9, previousChampion: 'Trick Williams', acquiredDate: 'Year 1|September|Week 1' },
+    { id: 'ch-12', titleName: 'NXT Women\'s Championship', brand: 'NXT', currentChampion: 'Giulia', daysHeld: 89, defenses: 4, previousChampion: 'Roxanne', acquiredDate: 'Year 1|February|Week 3' },
+    { id: 'ch-13', titleName: 'Women\'s Intercontinental Championship', brand: 'RAW', currentChampion: 'Asuka', daysHeld: 287, defenses: 8, previousChampion: 'Lyra Valkyria', acquiredDate: 'Year 1|August|Week 1' },
+    { id: 'ch-14', titleName: 'Women\'s United States Championship', brand: 'SmackDown', currentChampion: 'Naomi', daysHeld: 134, defenses: 5, previousChampion: 'Chelsea Green', acquiredDate: 'Year 1|January|Week 1' },
+    { id: 'ch-15', titleName: 'NXT Tag Team Championship', brand: 'NXT', currentChampion: 'Charlie Dempsey & Myles Borne', daysHeld: 43, defenses: 3, previousChampion: 'Dudley Boyz', acquiredDate: 'Year 1|April|Week 1' },
+    { id: 'ch-16', titleName: 'Women\'s NXT NA Championship', brand: 'NXT', currentChampion: 'Kelani Jordan', daysHeld: 165, defenses: 6, previousChampion: 'Fallon Henley', acquiredDate: 'Year 1|December|Week 1' }
   ],
 
   rivalries: [

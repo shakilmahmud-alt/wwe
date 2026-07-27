@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { ChampionEntry, BrandType, Superstar } from '../types';
+import { ChampionEntry, Superstar } from '../types';
 import { Crown, Plus, Trash2, Edit2, ShieldAlert, Award, Trophy } from 'lucide-react';
+import { calculateDaysBetween, formatAcquiredDate, getDisplayAcquiredDate, UNIVERSE_MONTH_ORDER } from '../utils/universeTime';
 
 interface ChampListViewProps {
   champions: ChampionEntry[];
@@ -23,9 +24,13 @@ export const ChampListView: React.FC<ChampListViewProps> = ({
   const [titleName, setTitleName] = useState('');
   const [brand, setBrand] = useState<'RAW' | 'SmackDown' | 'NXT' | 'Joint'>('RAW');
   const [currentChampion, setCurrentChampion] = useState('');
-  const [daysHeld, setDaysHeld] = useState(30);
+  const [sinceYear, setSinceYear] = useState(1);
+  const [sinceMonth, setSinceMonth] = useState('May');
+  const [sinceWeek, setSinceWeek] = useState('Week 1');
   const [defenses, setDefenses] = useState(2);
   const [previousChampion, setPreviousChampion] = useState('');
+
+  const autoCalculatedDays = calculateDaysBetween(sinceYear, sinceMonth, sinceWeek);
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,15 +41,18 @@ export const ChampListView: React.FC<ChampListViewProps> = ({
       titleName: titleName.trim(),
       brand,
       currentChampion: currentChampion.trim(),
-      daysHeld,
+      daysHeld: autoCalculatedDays,
       defenses,
-      previousChampion: previousChampion.trim()
+      previousChampion: previousChampion.trim(),
+      acquiredDate: formatAcquiredDate(sinceYear, sinceMonth, sinceWeek)
     };
 
     onAddChampion(newChamp);
     setTitleName('');
     setCurrentChampion('');
-    setDaysHeld(30);
+    setSinceYear(1);
+    setSinceMonth('May');
+    setSinceWeek('Week 1');
     setDefenses(2);
     setPreviousChampion('');
   };
@@ -121,16 +129,49 @@ export const ChampListView: React.FC<ChampListViewProps> = ({
               </div>
             </div>
 
+            <div className="p-2.5 bg-slate-950 border border-yellow-500/30 rounded-lg space-y-2">
+              <label className="block text-xs font-bold text-yellow-400 flex justify-between items-center">
+                <span>Won Since (Universe Date)</span>
+                <span className="text-[10px] text-slate-400 font-normal">Now: Yr 2, May, W3</span>
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                <select
+                  value={sinceYear}
+                  onChange={(e) => setSinceYear(Number(e.target.value))}
+                  className="w-full p-2 bg-slate-900 border border-slate-700 rounded text-white text-xs font-semibold focus:border-yellow-500"
+                >
+                  <option value={1}>Year 1</option>
+                  <option value={2}>Year 2</option>
+                </select>
+                <select
+                  value={sinceMonth}
+                  onChange={(e) => setSinceMonth(e.target.value)}
+                  className="w-full p-2 bg-slate-900 border border-slate-700 rounded text-white text-xs font-semibold focus:border-yellow-500"
+                >
+                  {UNIVERSE_MONTH_ORDER.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+                <select
+                  value={sinceWeek}
+                  onChange={(e) => setSinceWeek(e.target.value)}
+                  className="w-full p-2 bg-slate-900 border border-slate-700 rounded text-white text-xs font-semibold focus:border-yellow-500"
+                >
+                  <option value="Week 1">Week 1</option>
+                  <option value="Week 2">Week 2</option>
+                  <option value="Week 3">Week 3</option>
+                  <option value="Week 4">Week 4</option>
+                </select>
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-slate-400 mb-1">Days Held</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={daysHeld}
-                  onChange={(e) => setDaysHeld(Number(e.target.value))}
-                  className="w-full p-2 bg-slate-950 border border-slate-700 rounded text-white"
-                />
+                <label className="block text-slate-400 mb-1">Days Held (Auto Calculated)</label>
+                <div className="w-full p-2 bg-slate-950/80 border border-yellow-500/50 rounded text-yellow-300 font-black text-sm flex items-center justify-between">
+                  <span>{autoCalculatedDays} Days</span>
+                  <span className="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800 px-1.5 py-0.5 rounded font-semibold">AUTO</span>
+                </div>
               </div>
 
               <div>
@@ -210,7 +251,12 @@ export const ChampListView: React.FC<ChampListViewProps> = ({
               </div>
 
               <div className="pt-3 mt-3 border-t border-slate-800 flex justify-between items-center text-xs">
-                <span className="text-slate-300 font-semibold">{c.daysHeld} Days Reign</span>
+                <div className="flex flex-col">
+                  <span className="text-slate-300 font-semibold">{c.daysHeld} Days Reign</span>
+                  {c.acquiredDate && (
+                    <span className="text-[10px] text-purple-300 font-medium">Won: {getDisplayAcquiredDate(c.acquiredDate)}</span>
+                  )}
+                </div>
                 <span className="text-emerald-400 font-bold bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800/50">
                   {c.defenses} Defenses
                 </span>

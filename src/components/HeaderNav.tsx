@@ -13,7 +13,9 @@ import {
   RotateCcw,
   Download,
   Upload,
-  Plus
+  Plus,
+  CloudUpload,
+  CloudDownload
 } from 'lucide-react';
 
 interface HeaderNavProps {
@@ -24,6 +26,9 @@ interface HeaderNavProps {
   onExportJSON: () => void;
   onImportJSON: (e: React.ChangeEvent<HTMLInputElement>) => void;
   totalSuperstarsCount: number;
+  onSaveSupabase?: () => void;
+  onLoadSupabase?: () => void;
+  isCloudSyncing?: boolean;
 }
 
 export const HeaderNav: React.FC<HeaderNavProps> = ({
@@ -33,12 +38,15 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
   onClearAllData,
   onExportJSON,
   onImportJSON,
-  totalSuperstarsCount
+  totalSuperstarsCount,
+  onSaveSupabase,
+  onLoadSupabase,
+  isCloudSyncing
 }) => {
   const tabs: { id: TabPath; label: string; icon: React.ReactNode; colorClass: string; badge?: string }[] = [
     {
       id: 'roster',
-      label: 'Roster (2)',
+      label: 'Roster',
       icon: <Users className="w-4 h-4" />,
       colorClass: 'hover:text-emerald-400',
       badge: `${totalSuperstarsCount}`
@@ -47,19 +55,19 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
       id: 'raw',
       label: 'RAW',
       icon: <Flame className="w-4 h-4 text-red-500" />,
-      colorClass: 'hover:text-red-400 bg-red-950/40 border-red-800'
+      colorClass: 'hover:text-red-400'
     },
     {
       id: 'sd',
       label: 'SD',
       icon: <Zap className="w-4 h-4 text-blue-500" />,
-      colorClass: 'hover:text-blue-400 bg-blue-950/40 border-blue-800'
+      colorClass: 'hover:text-blue-400'
     },
     {
       id: 'nxt',
       label: 'NXT',
       icon: <Tv className="w-4 h-4 text-yellow-500" />,
-      colorClass: 'hover:text-yellow-400 bg-yellow-950/40 border-yellow-800'
+      colorClass: 'hover:text-yellow-400'
     },
     {
       id: 'achievement-men',
@@ -108,9 +116,9 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
             <span className="px-2 py-0.5 rounded bg-red-600 text-white shadow-lg shadow-red-600/30 font-extrabold text-sm tracking-tighter">RAW</span>
             <span className="px-2 py-0.5 rounded bg-blue-600 text-white shadow-lg shadow-blue-600/30 font-extrabold text-sm tracking-tighter">SD</span>
             <span className="px-2 py-0.5 rounded bg-yellow-500 text-black shadow-lg shadow-yellow-500/30 font-extrabold text-sm tracking-tighter">NXT</span>
-            <span className="ml-2 text-slate-100 font-extrabold tracking-wide">WWE 2K26</span>
+            <span className="ml-2 text-slate-100 font-extrabold tracking-wide">WWE Universe Manager</span>
             <span className="text-xs text-amber-400 font-semibold uppercase px-2 py-0.5 bg-amber-500/10 border border-amber-500/30 rounded">
-              Storyline Tracker
+              2K26 Edition
             </span>
           </div>
         </div>
@@ -158,6 +166,30 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
             <Download className="w-3.5 h-3.5 text-slate-400" />
             Export
           </button>
+
+          {onSaveSupabase && (
+            <button
+              onClick={onSaveSupabase}
+              disabled={isCloudSyncing}
+              className="px-2.5 py-1.5 text-xs font-semibold rounded-md bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center gap-1 shadow-md shadow-indigo-900/20 disabled:opacity-50"
+              title="Save all Universe data to Supabase Cloud"
+            >
+              <CloudUpload className="w-3.5 h-3.5" />
+              {isCloudSyncing ? 'Syncing...' : 'Cloud Save'}
+            </button>
+          )}
+
+          {onLoadSupabase && (
+            <button
+              onClick={onLoadSupabase}
+              disabled={isCloudSyncing}
+              className="px-2.5 py-1.5 text-xs font-semibold rounded-md bg-purple-600 hover:bg-purple-500 text-white transition flex items-center gap-1 shadow-md shadow-purple-900/20 disabled:opacity-50"
+              title="Load Universe data from Supabase Cloud"
+            >
+              <CloudDownload className="w-3.5 h-3.5" />
+              {isCloudSyncing ? 'Syncing...' : 'Cloud Load'}
+            </button>
+          )}
         </div>
       </div>
 

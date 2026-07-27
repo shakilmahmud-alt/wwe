@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Superstar, BrandType, TierType, ChampionEntry, RivalryEntry, ShowPlan, MatchCardItem } from '../types';
 import { Plus, Trash2, Edit2, Flame, Zap, Tv, Crown, Swords, Calendar, UserPlus, Check, X } from 'lucide-react';
+import { calculateDaysBetween, formatAcquiredDate, getDisplayAcquiredDate, UNIVERSE_MONTH_ORDER } from '../utils/universeTime';
 
 interface BrandDashboardProps {
   brand: BrandType;
@@ -14,6 +15,9 @@ interface BrandDashboardProps {
   onMoveSuperstar: (id: string, newBrand: BrandType, newTier: TierType) => void;
   onSaveShowPlan: (plan: ShowPlan) => void;
   onDeleteShowPlan: (id: string) => void;
+  onAddChampion?: (entry: ChampionEntry) => void;
+  onUpdateChampion?: (entry: ChampionEntry) => void;
+  onDeleteChampion?: (id: string) => void;
 }
 
 export const BrandDashboard: React.FC<BrandDashboardProps> = ({
@@ -27,7 +31,10 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
   onDeleteSuperstar,
   onMoveSuperstar,
   onSaveShowPlan,
-  onDeleteShowPlan
+  onDeleteShowPlan,
+  onAddChampion,
+  onUpdateChampion,
+  onDeleteChampion
 }) => {
   const brandSuperstars = superstars.filter((s) => s.brand === brand);
   const brandChampions = champions.filter((c) => c.brand === brand || c.brand === 'Joint');
@@ -36,6 +43,18 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
   // Input states
   const [newSuperstarName, setNewSuperstarName] = useState('');
   const [selectedTier, setSelectedTier] = useState<TierType>('Top');
+
+  // Champion creation states
+  const [isCreatingChampion, setIsCreatingChampion] = useState(false);
+  const [champTitleName, setChampTitleName] = useState('');
+  const [champCurrentWinner, setChampCurrentWinner] = useState('');
+  const [champPrevWinner, setChampPrevWinner] = useState('');
+  const [sinceYear, setSinceYear] = useState(1);
+  const [sinceMonth, setSinceMonth] = useState('May');
+  const [sinceWeek, setSinceWeek] = useState('Week 1');
+  const [champDefenses, setChampDefenses] = useState(0);
+
+  const autoCalculatedDays = calculateDaysBetween(sinceYear, sinceMonth, sinceWeek);
 
   // Episode plan creation state
   const [isCreatingShow, setIsCreatingShow] = useState(false);
@@ -251,23 +270,197 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
         <div className="space-y-6">
           {/* Champions Showcase Widget */}
           <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl shadow-lg">
-            <h3 className="text-sm font-bold text-amber-400 flex items-center gap-2 mb-3">
-              <Crown className="w-4 h-4 text-amber-400" />
-              {brand} Active Champions
-            </h3>
-            {brandChampions.length === 0 ? (
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-bold text-amber-400 flex items-center gap-2">
+                <Crown className="w-4 h-4 text-amber-400" />
+                {brand} Active Champions
+              </h3>
+              {!isCreatingChampion && onAddChampion && (
+                <button
+                  onClick={() => {
+                    setChampTitleName(`${brand} Championship`);
+                    setChampCurrentWinner(brandSuperstars[0]?.name || '');
+                    setChampPrevWinner('');
+                    setSinceYear(1);
+                    setSinceMonth('May');
+                    setSinceWeek('Week 1');
+                    setChampDefenses(0);
+                    setIsCreatingChampion(true);
+                  }}
+                  className="px-2.5 py-1 text-xs font-bold rounded-md bg-amber-500 hover:bg-amber-400 text-slate-950 transition flex items-center gap-1 shadow"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add Champion
+                </button>
+              )}
+            </div>
+
+            {isCreatingChampion && (
+              <div className="p-3 bg-slate-950 rounded-lg border border-amber-500/40 space-y-3 text-xs mb-4">
+                <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+                  <span className="font-bold text-amber-400">Assign {brand} Championship</span>
+                  <button onClick={() => setIsCreatingChampion(false)} className="text-slate-400 hover:text-white">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  <div>
+                    <label className="block text-[10px] text-slate-400 mb-1">Title Name</label>
+                    <input
+                      type="text"
+                      value={champTitleName}
+                      onChange={(e) => setChampTitleName(e.target.value)}
+                      placeholder={`e.g. Undisputed ${brand} Championship`}
+                      className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white focus:border-amber-500 outline-none"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] text-slate-400 mb-1">Current Champion</label>
+                      {brandSuperstars.length > 0 ? (
+                        <select
+                          value={champCurrentWinner}
+                          onChange={(e) => setChampCurrentWinner(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white focus:border-amber-500 outline-none"
+                        >
+                          <option value="">Select Superstar...</option>
+                          {brandSuperstars.map((s) => (
+                            <option key={s.id} value={s.name}>{s.name}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type="text"
+                          value={champCurrentWinner}
+                          onChange={(e) => setChampCurrentWinner(e.target.value)}
+                          placeholder="Superstar Name..."
+                          className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white focus:border-amber-500 outline-none"
+                        />
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-slate-400 mb-1">Previous Champion (Optional)</label>
+                      <input
+                        type="text"
+                        value={champPrevWinner}
+                        onChange={(e) => setChampPrevWinner(e.target.value)}
+                        placeholder="Previous Holder..."
+                        className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white focus:border-amber-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="p-2 bg-slate-900 border border-amber-500/30 rounded space-y-1.5">
+                    <label className="block text-[10px] font-bold text-amber-400 flex justify-between items-center">
+                      <span>Won Since (Universe Date)</span>
+                      <span className="text-[9px] text-slate-400 font-normal">Now: Yr 2, May, W3</span>
+                    </label>
+                    <div className="grid grid-cols-3 gap-1">
+                      <select
+                        value={sinceYear}
+                        onChange={(e) => setSinceYear(Number(e.target.value))}
+                        className="bg-slate-950 border border-slate-700 rounded p-1 text-white text-[10px]"
+                      >
+                        <option value={1}>Year 1</option>
+                        <option value={2}>Year 2</option>
+                      </select>
+                      <select
+                        value={sinceMonth}
+                        onChange={(e) => setSinceMonth(e.target.value)}
+                        className="bg-slate-950 border border-slate-700 rounded p-1 text-white text-[10px]"
+                      >
+                        {UNIVERSE_MONTH_ORDER.map((m) => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={sinceWeek}
+                        onChange={(e) => setSinceWeek(e.target.value)}
+                        className="bg-slate-950 border border-slate-700 rounded p-1 text-white text-[10px]"
+                      >
+                        <option value="Week 1">Week 1</option>
+                        <option value="Week 2">Week 2</option>
+                        <option value="Week 3">Week 3</option>
+                        <option value="Week 4">Week 4</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] text-slate-400 mb-1">Days Held (Auto)</label>
+                      <div className="w-full bg-slate-950/80 border border-amber-500/50 rounded px-2.5 py-1.5 text-amber-300 font-bold flex items-center justify-between text-xs">
+                        <span>{autoCalculatedDays} Days</span>
+                        <span className="text-[9px] bg-emerald-950 text-emerald-400 border border-emerald-800 px-1 py-0.5 rounded font-semibold">AUTO</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-slate-400 mb-1">Successful Defenses</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={champDefenses}
+                        onChange={(e) => setChampDefenses(parseInt(e.target.value) || 0)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white focus:border-amber-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (!champTitleName.trim() || !champCurrentWinner.trim()) return;
+                      onAddChampion?.({
+                        id: `ch-${Date.now()}`,
+                        titleName: champTitleName.trim(),
+                        brand: brand === 'Women Tag' || brand === 'Free Agent' ? 'Joint' : brand as any,
+                        currentChampion: champCurrentWinner.trim(),
+                        daysHeld: autoCalculatedDays,
+                        defenses: champDefenses,
+                        previousChampion: champPrevWinner.trim() || undefined,
+                        acquiredDate: formatAcquiredDate(sinceYear, sinceMonth, sinceWeek)
+                      });
+                      setIsCreatingChampion(false);
+                      setChampTitleName('');
+                      setChampCurrentWinner('');
+                      setChampPrevWinner('');
+                    }}
+                    disabled={!champTitleName.trim() || !champCurrentWinner.trim()}
+                    className="w-full py-1.5 font-bold rounded bg-amber-500 hover:bg-amber-400 text-slate-950 transition disabled:opacity-50 mt-2 flex items-center justify-center gap-1.5"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    Save & Assign Champion
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {brandChampions.length === 0 && !isCreatingChampion ? (
               <p className="text-xs text-slate-500 italic">No champions logged for {brand} yet.</p>
             ) : (
               <div className="space-y-2">
                 {brandChampions.map((c) => (
-                  <div key={c.id} className="p-2.5 rounded-lg bg-slate-950 border border-amber-500/30 flex items-center justify-between text-xs">
+                  <div key={c.id} className="p-2.5 rounded-lg bg-slate-950 border border-amber-500/30 flex items-center justify-between text-xs group hover:border-amber-500/60 transition">
                     <div>
                       <span className="text-[10px] font-bold uppercase text-amber-500 block">{c.titleName}</span>
                       <span className="font-extrabold text-white text-sm">{c.currentChampion}</span>
+                      {c.acquiredDate && (
+                        <span className="text-[10px] text-purple-300 font-semibold block">Won: {getDisplayAcquiredDate(c.acquiredDate)}</span>
+                      )}
+                      {c.previousChampion && (
+                        <span className="text-[10px] text-slate-400 block">Prev: {c.previousChampion}</span>
+                      )}
                     </div>
-                    <div className="text-right text-[10px] text-slate-400">
-                      <div>{c.daysHeld} Days Reign</div>
-                      <div className="text-emerald-400 font-semibold">{c.defenses} Defenses</div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right text-[10px] text-slate-400">
+                        <div>{c.daysHeld} Days Reign</div>
+                        <div className="text-emerald-400 font-semibold">{c.defenses} Defenses</div>
+                      </div>
+                      {onDeleteChampion && (
+                        <button
+                          onClick={() => onDeleteChampion(c.id)}
+                          className="p-1 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition rounded hover:bg-slate-900"
+                          title="Remove Championship record"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
