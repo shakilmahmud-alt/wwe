@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CalendarEvent } from '../types';
 import { Calendar, Plus, Trash2, CheckCircle2, Clock, MapPin, Tv, Flame, Zap } from 'lucide-react';
+import { UNIVERSE_MONTH_ORDER, UNIVERSE_WEEKS } from '../utils/universeTime';
 
 interface CalendarViewProps {
   events: CalendarEvent[];
@@ -23,7 +24,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const [eventName, setEventName] = useState('');
   const [selectedBrands, setSelectedBrands] = useState<string[]>(['RAW', 'SmackDown', 'NXT']);
   const [type, setType] = useState<'PLE' | 'Weekly Show' | 'Special Event'>('PLE');
-  const [dateStr, setDateStr] = useState('Week 3');
+  const [dateStr, setDateStr] = useState(UNIVERSE_WEEKS[1]);
   const [location, setLocation] = useState('');
   const [mainEvent, setMainEvent] = useState('');
 
@@ -63,15 +64,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
     onAddEvent(newEv);
     setEventName('');
-    setDateStr('Week 3');
+    setDateStr(UNIVERSE_WEEKS[1]);
     setLocation('');
     setMainEvent('');
   };
 
-  const monthsList = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
+  const monthsList = UNIVERSE_MONTH_ORDER;
 
   return (
     <div className="max-w-[1920px] mx-auto p-4 md:p-6 space-y-6 text-slate-100">
@@ -193,16 +191,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-400 mb-1">Week (in Month)</label>
+                <label className="block text-slate-400 mb-1">Week / PLE Day</label>
                 <select
                   value={dateStr}
                   onChange={(e) => setDateStr(e.target.value)}
                   className="w-full p-2 bg-slate-950 border border-slate-700 rounded text-white font-medium focus:outline-none focus:border-purple-500"
                 >
-                  <option value="Week 1">Week 1 (Day 1 - 7)</option>
-                  <option value="Week 2">Week 2 (Day 8 - 14)</option>
-                  <option value="Week 3">Week 3 (Day 15 - 21)</option>
-                  <option value="Week 4">Week 4 (Day 22 - Month End)</option>
+                  {UNIVERSE_WEEKS.map((w) => (
+                    <option key={w} value={w}>{w}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -294,6 +291,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 evBrand.includes('Joint');
               const typeMatch = filterType === 'All' || e.type === filterType;
               return brandMatch && typeMatch;
+            }).sort((a, b) => {
+              const mDiff = UNIVERSE_MONTH_ORDER.indexOf(a.month) - UNIVERSE_MONTH_ORDER.indexOf(b.month);
+              if (mDiff !== 0) return mDiff;
+              return a.eventName.localeCompare(b.eventName);
             });
 
             if (events.length === 0) {
@@ -367,7 +368,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       <h3 className="font-extrabold text-white text-base leading-tight mb-1">{ev.eventName}</h3>
                       <p className="text-xs text-slate-400 flex items-center gap-1 mb-2">
                         <MapPin className="w-3.5 h-3.5 text-slate-500" />
-                        {ev.location || 'WWE Arena'} • <span className="font-semibold text-slate-300">{ev.date.includes('Week') ? `${ev.month} (${ev.date})` : ev.date}</span>
+                        {ev.location || 'WWE Arena'} • <span className="font-semibold text-slate-300">{ev.month} • {ev.date}</span>
                       </p>
 
                       {ev.mainEvent && (

@@ -17,14 +17,35 @@ export const UNIVERSE_MONTH_ORDER = [
   'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December', 'January', 'February', 'March', 'April'
 ];
 
-export const UNIVERSE_WEEKS = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+export const UNIVERSE_WEEKS = [
+  'Day 1 (Start of Month - 0d)',
+  'Day 7 (PLE / W2 - 7d)',
+  'Day 14 (PLE / W3 - 14d)',
+  'Day 21 (PLE / W4 - 21d)',
+  'Day 28 (PLE / W5 - 28d)',
+  'Day 30/31 (Month End - 30d)'
+];
 
 export const getUniverseTotalDays = (year: number, month: string, week: string): number => {
   const weekDayOffset: Record<string, number> = {
     'Week 1': 0,
+    'Day 1 (Start of Month - 0d)': 0,
+    'Day 1 (Start of Month)': 0,
     'Week 2': 7,
+    'Day 7 (PLE / W2 - 7d)': 7,
+    'Day 7 (PLE / Week 2)': 7,
     'Week 3': 14,
+    'Day 14 (PLE / W3 - 14d)': 14,
+    'Day 14 (PLE / Week 3)': 14,
     'Week 4': 21,
+    'Day 21 (PLE / W4 - 21d)': 21,
+    'Day 21 (PLE / Week 4)': 21,
+    'Week 5': 28,
+    'Day 28 (PLE / W5 - 28d)': 28,
+    'Day 28 (PLE / Week 5)': 28,
+    'Month End': 30,
+    'Day 30/31 (Month End - 30d)': 30,
+    'Day 30/31 (Month End)': 30,
   };
 
   let total = (Math.max(1, year) - 1) * 365;
@@ -36,10 +57,10 @@ export const getUniverseTotalDays = (year: number, month: string, week: string):
   return total;
 };
 
-// Current Game Universe Date: Year 2, May, Week 3 (1 year finished, now in Yr 2 May W3)
+// Current Game Universe Date: Year 2, May, Day 14 (1 year finished, now in Yr 2 May Day 14)
 export const CURRENT_UNIVERSE_YEAR = 2;
 export const CURRENT_UNIVERSE_MONTH = 'May';
-export const CURRENT_UNIVERSE_WEEK = 'Week 3';
+export const CURRENT_UNIVERSE_WEEK = UNIVERSE_WEEKS[2];
 
 export const calculateDaysBetween = (
   sinceYear: number,
@@ -62,13 +83,20 @@ export interface ParsedUniverseDate {
 
 export const parseAcquiredDate = (acquiredDate?: string): ParsedUniverseDate => {
   if (!acquiredDate || !acquiredDate.includes('|')) {
-    return { year: 1, month: 'May', week: 'Week 1' };
+    return { year: 1, month: 'May', week: UNIVERSE_WEEKS[0] };
   }
   const parts = acquiredDate.split('|');
   const yearStr = parts[0].replace(/[^0-9]/g, '');
   const year = parseInt(yearStr) || 1;
   const month = UNIVERSE_MONTH_ORDER.includes(parts[1]) ? parts[1] : 'May';
-  const week = UNIVERSE_WEEKS.includes(parts[2]) ? parts[2] : 'Week 1';
+  let week = parts[2] || UNIVERSE_WEEKS[0];
+  if (week === 'Week 1' || week.includes('Day 1')) week = UNIVERSE_WEEKS[0];
+  else if (week === 'Week 2' || week.includes('Day 7')) week = UNIVERSE_WEEKS[1];
+  else if (week === 'Week 3' || week.includes('Day 14')) week = UNIVERSE_WEEKS[2];
+  else if (week === 'Week 4' || week.includes('Day 21')) week = UNIVERSE_WEEKS[3];
+  else if (week === 'Week 5' || week.includes('Day 28')) week = UNIVERSE_WEEKS[4];
+  else if (week.includes('Month End') || week.includes('Day 30')) week = UNIVERSE_WEEKS[5];
+  else if (!UNIVERSE_WEEKS.includes(week)) week = UNIVERSE_WEEKS[0];
   return { year, month, week };
 };
 
@@ -78,6 +106,12 @@ export const formatAcquiredDate = (year: number, month: string, week: string): s
 
 export const getDisplayAcquiredDate = (acquiredDate?: string): string => {
   const { year, month, week } = parseAcquiredDate(acquiredDate);
-  const shortWeek = week.replace('Week ', 'W');
+  let shortWeek = 'Day 1';
+  if (week.includes('Day 1')) shortWeek = 'Day 1';
+  else if (week.includes('Day 7')) shortWeek = 'Day 7 (PLE)';
+  else if (week.includes('Day 14')) shortWeek = 'Day 14 (PLE)';
+  else if (week.includes('Day 21')) shortWeek = 'Day 21 (PLE)';
+  else if (week.includes('Day 28')) shortWeek = 'Day 28 (PLE)';
+  else if (week.includes('Month End') || week.includes('Day 30')) shortWeek = 'Month End';
   return `Yr ${year} • ${month} (${shortWeek})`;
 };

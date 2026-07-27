@@ -15,7 +15,8 @@ import {
   Upload,
   Plus,
   CloudUpload,
-  CloudDownload
+  CloudDownload,
+  History
 } from 'lucide-react';
 
 interface HeaderNavProps {
@@ -29,6 +30,7 @@ interface HeaderNavProps {
   onSaveSupabase?: () => void;
   onLoadSupabase?: () => void;
   isCloudSyncing?: boolean;
+  supabaseStatus?: 'connected' | 'connecting' | 'disconnected';
 }
 
 export const HeaderNav: React.FC<HeaderNavProps> = ({
@@ -41,7 +43,8 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
   totalSuperstarsCount,
   onSaveSupabase,
   onLoadSupabase,
-  isCloudSyncing
+  isCloudSyncing,
+  supabaseStatus = 'connected'
 }) => {
   const tabs: { id: TabPath; label: string; icon: React.ReactNode; colorClass: string; badge?: string }[] = [
     {
@@ -92,6 +95,13 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
       label: 'Champ List',
       icon: <Crown className="w-4 h-4 text-yellow-400" />,
       colorClass: 'hover:text-yellow-400'
+    },
+    {
+      id: 'title-history',
+      label: '2K25 History',
+      icon: <History className="w-4 h-4 text-amber-500" />,
+      colorClass: 'hover:text-amber-400',
+      badge: 'NEW'
     },
     {
       id: 'summary',
@@ -166,6 +176,17 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
             <Download className="w-3.5 h-3.5 text-slate-400" />
             Export
           </button>
+
+          <div className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md bg-slate-900 border border-slate-800 text-slate-300" title={`Supabase Status: ${supabaseStatus}`}>
+            <span className={`w-2 h-2 rounded-full ${
+              supabaseStatus === 'connected' ? 'bg-emerald-400 shadow-sm shadow-emerald-400 animate-pulse' :
+              supabaseStatus === 'connecting' ? 'bg-amber-400 animate-ping' :
+              'bg-red-400'
+            }`} />
+            <span className="text-[11px] font-medium text-slate-400">
+              {supabaseStatus === 'connected' ? 'Supabase Connected' : supabaseStatus === 'connecting' ? 'Connecting...' : 'Supabase Offline'}
+            </span>
+          </div>
 
           {onSaveSupabase && (
             <button

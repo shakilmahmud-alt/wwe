@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   TabPath,
   AppState,
@@ -14,7 +14,7 @@ import {
   ShowPlan
 } from './types';
 import { initialEmptyState, sampleFullData } from './data/sampleRoster';
-import { saveToSupabase, loadFromSupabase, SUPABASE_TABLE_NAME } from './lib/supabase';
+import { saveToSupabase, loadFromSupabase, checkSupabaseConnection, SUPABASE_TABLE_NAME } from './lib/supabase';
 import { HeaderNav } from './components/HeaderNav';
 import { RosterSpreadsheet } from './components/RosterSpreadsheet';
 import { BrandDashboard } from './components/BrandDashboard';
@@ -24,6 +24,7 @@ import { CalendarView } from './components/CalendarView';
 import { ChampListView } from './components/ChampListView';
 import { SummaryView } from './components/SummaryView';
 import { RivalryView } from './components/RivalryView';
+import { TitleHistoryView } from './components/TitleHistoryView';
 
 const STORAGE_KEY = 'wwe2k26_universe_data_v2';
 
@@ -43,7 +44,8 @@ export default function App() {
       'calendar',
       'champ-list',
       'summary',
-      'rivalry'
+      'rivalry',
+      'title-history'
     ];
 
     if (validTabs.includes(hash as TabPath)) return hash as TabPath;
@@ -85,23 +87,81 @@ export default function App() {
     } catch (err) {
       console.error('Failed to load local storage state:', err);
     }
-    // Default to empty state as requested by the user ("ami input dibo... field toiri kore dao")
     return initialEmptyState;
   });
 
+  const isHydratedRef = useRef(false);
+  const [isCloudSyncing, setIsCloudSyncing] = useState(false);
+  const [supabaseStatus, setSupabaseStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connecting');
+
+  // Initial Boot: Verify Supabase connection AND fetch Cloud data if available
+  useEffect(() => {
+    let isMounted = true;
+    async function initCloudAndHydrate() {
+      const ok = await checkSupabaseConnection();
+      if (!isMounted) return;
+
+      setSupabaseStatus(ok ? 'connected' : 'disconnected');
+
+      if (ok) {
+        try {
+          const cloudRes = await loadFromSupabase();
+          if (isMounted && cloudRes.success && cloudRes.data) {
+            const cloudData = cloudRes.data;
+            const cloudSuperstarCount = cloudData.superstars?.length || 0;
+
+            const savedLocal = localStorage.getItem(STORAGE_KEY);
+            const localData = savedLocal ? JSON.parse(savedLocal) : null;
+            const localSuperstarCount = localData?.superstars?.length || 0;
+
+            // If Supabase has data and local storage is empty or has fewer items, hydrate from Supabase Cloud!
+            if (cloudSuperstarCount > 0 && (localSuperstarCount === 0 || cloudSuperstarCount >= localSuperstarCount)) {
+              setAppState(cloudData);
+              console.log('Hydrated state from Supabase Cloud on boot');
+            }
+          }
+        } catch (e) {
+          console.error('Cloud hydration error:', e);
+        }
+      }
+      isHydratedRef.current = true;
+    }
+
+    initCloudAndHydrate();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Save state to LocalStorage and auto-sync to Supabase (after hydration is ready)
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
-      // Auto-update Supabase database in background when credentials exist
-      if (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY) {
-        saveToSupabase(appState).catch((err) => console.log('Silent Supabase auto-sync:', err));
-      }
     } catch (err) {
       console.error('Failed to save state to localStorage:', err);
     }
-  }, [appState]);
 
-  const [isCloudSyncing, setIsCloudSyncing] = useState(false);
+    // NEVER auto-overwrite Supabase until initial mount cloud check is finished
+    if (!isHydratedRef.current) {
+      return;
+    }
+
+    // Debounce auto-save to Supabase to prevent empty/half-edited overwrites
+    const timer = setTimeout(async () => {
+      if (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY) {
+        setIsCloudSyncing(true);
+        try {
+          await saveToSupabase(appState);
+        } catch (err) {
+          console.error('Auto Supabase sync error:', err);
+        } finally {
+          setIsCloudSyncing(false);
+        }
+      }
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [appState]);
 
   const handleSaveSupabase = async () => {
     setIsCloudSyncing(true);
@@ -399,10 +459,11 @@ export default function App() {
         onClearAllData={handleClearAllData}
         onExportJSON={handleExportJSON}
         onImportJSON={handleImportJSON}
-        totalSuperstarsCount={appState.superstars.length}
+        totalSuperstarsCount={appState.superstars.filter(s => s.tier !== 'Tag Team').length}
         onSaveSupabase={handleSaveSupabase}
         onLoadSupabase={handleLoadSupabase}
         isCloudSyncing={isCloudSyncing}
+        supabaseStatus={supabaseStatus}
       />
 
       {/* Main Tab Content View */}
@@ -517,6 +578,8 @@ export default function App() {
             onDeleteChampion={handleDeleteChampion}
           />
         )}
+
+        {currentTab === 'title-history' && <TitleHistoryView />}
 
         {currentTab === 'summary' && (
           <SummaryView

@@ -44,14 +44,29 @@ export interface ShowPlan {
 export interface AchievementMale {
   id: string;
   superstarName: string;
-  brand: BrandType;
-  royalRumbleCount: number;
-  mitbCount: number;
-  chamberCount: number;
-  grandSlam: boolean;
-  motyCount: number;
-  hallOfFame: boolean;
-  streakWins: number;
+  brand?: BrandType;
+  // The 9 Title Checkmarks:
+  univUndisputed?: boolean; // Universal / Undisputed WWE
+  worldHw?: boolean;        // WWE / World Heavyweight
+  ic?: boolean;             // Intercontinental
+  us?: boolean;             // US
+  tagTeam?: boolean;        // Tag Team
+  cruiserweight?: boolean;  // Cruiserweight
+  nxt?: boolean;            // NXT
+  uk?: boolean;             // UK
+  northAmerican?: boolean;  // North American
+
+  // Historic Grand Slam Order Number (e.g., 1 for Seth Rollins, 2 for Randy Orton, etc.)
+  grandSlamOrder?: number;
+
+  // Legacy fields (optional for backwards compatibility):
+  royalRumbleCount?: number;
+  mitbCount?: number;
+  chamberCount?: number;
+  grandSlam?: boolean;
+  motyCount?: number;
+  hallOfFame?: boolean;
+  streakWins?: number;
   notes?: string;
 }
 
@@ -114,7 +129,8 @@ export type TabPath =
   | 'calendar'
   | 'champ-list'
   | 'summary'
-  | 'rivalry';
+  | 'rivalry'
+  | 'title-history';
 
 export interface AppState {
   superstars: Superstar[];

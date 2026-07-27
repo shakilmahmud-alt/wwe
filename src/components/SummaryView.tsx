@@ -108,10 +108,10 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
     }
   ];
 
-  const rawCount = superstars.filter((s) => s.brand === 'RAW').length;
-  const sdCount = superstars.filter((s) => s.brand === 'SmackDown').length;
-  const nxtCount = superstars.filter((s) => s.brand === 'NXT').length;
-  const totalRoster = superstars.length;
+  const rawCount = superstars.filter((s) => s.brand === 'RAW' && s.tier !== 'Tag Team').length;
+  const sdCount = superstars.filter((s) => s.brand === 'SmackDown' && s.tier !== 'Tag Team').length;
+  const nxtCount = superstars.filter((s) => s.brand === 'NXT' && s.tier !== 'Tag Team').length;
+  const totalRoster = superstars.filter((s) => s.tier !== 'Tag Team').length;
 
   const femaleCount = superstars.filter((s) => s.tier === 'Female').length;
   const maleCount = totalRoster - femaleCount;

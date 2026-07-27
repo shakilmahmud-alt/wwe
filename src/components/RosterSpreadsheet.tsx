@@ -54,6 +54,7 @@ export const RosterSpreadsheet: React.FC<RosterSpreadsheetProps> = ({
   const nxtMiddle = getList('NXT', 'Middle');
   const nxtLow = getList('NXT', 'Low');
   const nxtFemale = getList('NXT', 'Female');
+  const nxtTag = getList('NXT', 'Tag Team');
 
   const filteredWomenTag = womenTagTeams.filter((t) =>
     t.teamName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -64,7 +65,7 @@ export const RosterSpreadsheet: React.FC<RosterSpreadsheetProps> = ({
     30, // Minimum spreadsheet height
     rawTop.length, rawMiddle.length, rawLow.length, rawFemale.length, rawTag.length,
     sdTop.length, sdMiddle.length, sdLow.length, sdFemale.length, sdTag.length,
-    nxtTop.length, nxtMiddle.length, nxtLow.length, nxtFemale.length,
+    nxtTop.length, nxtMiddle.length, nxtLow.length, nxtFemale.length, nxtTag.length,
     filteredWomenTag.length
   ) + 2;
 
@@ -132,10 +133,10 @@ export const RosterSpreadsheet: React.FC<RosterSpreadsheetProps> = ({
 
         <div className="flex items-center gap-3 text-xs font-semibold">
           <span className="text-red-400 flex items-center gap-1">
-            RAW Total: {rawTop.length + rawMiddle.length + rawLow.length + rawFemale.length + rawTag.length}
+            RAW Total: {rawTop.length + rawMiddle.length + rawLow.length + rawFemale.length}
           </span>
           <span className="text-blue-400 flex items-center gap-1">
-            SD Total: {sdTop.length + sdMiddle.length + sdLow.length + sdFemale.length + sdTag.length}
+            SD Total: {sdTop.length + sdMiddle.length + sdLow.length + sdFemale.length}
           </span>
           <span className="text-yellow-400 flex items-center gap-1">
             NXT Total: {nxtTop.length + nxtMiddle.length + nxtLow.length + nxtFemale.length}
@@ -158,7 +159,7 @@ export const RosterSpreadsheet: React.FC<RosterSpreadsheetProps> = ({
               <th colSpan={1} className="bg-purple-600 border-r-2 border-purple-800 py-2 text-xs shadow-inner">
                 WWE Women's Tag Team
               </th>
-              <th colSpan={4} className="bg-yellow-500 text-slate-950 border-r-2 border-yellow-700 py-2 text-sm shadow-inner">
+              <th colSpan={5} className="bg-yellow-500 text-slate-950 border-r-2 border-yellow-700 py-2 text-sm shadow-inner">
                 NXT
               </th>
             </tr>
@@ -340,13 +341,25 @@ export const RosterSpreadsheet: React.FC<RosterSpreadsheetProps> = ({
                   </button>
                 </div>
               </th>
-              <th className="bg-yellow-200/90 dark:bg-yellow-950/70 text-yellow-900 dark:text-yellow-200 py-1.5 px-2 w-[180px]">
+              <th className="bg-yellow-200/90 dark:bg-yellow-950/70 text-yellow-900 dark:text-yellow-200 py-1.5 px-2 w-[180px] border-r border-yellow-300 dark:border-yellow-800">
                 <div className="flex items-center justify-between">
                   <span>Female ({nxtFemale.length})</span>
                   <button
                     onClick={() => { setAddingColKey('nxt-female'); setNewInputName(''); }}
                     className="p-0.5 hover:bg-yellow-300 dark:hover:bg-yellow-800 rounded text-yellow-700 dark:text-yellow-300"
                     title="Add Female Superstar to NXT"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </th>
+              <th className="bg-yellow-200 dark:bg-yellow-950/90 text-yellow-900 dark:text-yellow-200 py-1.5 px-2 w-[180px]">
+                <div className="flex items-center justify-between">
+                  <span>Tag Team ({nxtTag.length})</span>
+                  <button
+                    onClick={() => { setAddingColKey('nxt-tag'); setNewInputName(''); }}
+                    className="p-0.5 hover:bg-yellow-300 dark:hover:bg-yellow-800 rounded text-yellow-700 dark:text-yellow-300"
+                    title="Add Tag Team to NXT"
                   >
                     <Plus className="w-3.5 h-3.5" />
                   </button>
@@ -359,7 +372,7 @@ export const RosterSpreadsheet: React.FC<RosterSpreadsheetProps> = ({
             {/* Quick Add Row when user clicks '+' header */}
             {addingColKey && (
               <tr className="bg-amber-100 dark:bg-amber-950/70 text-slate-900 dark:text-amber-100 border-b border-amber-300 font-semibold animate-fadeIn">
-                <td colSpan={15} className="p-2 text-center bg-amber-50 dark:bg-slate-800">
+                <td colSpan={16} className="p-2 text-center bg-amber-50 dark:bg-slate-800">
                   <div className="max-w-md mx-auto flex items-center gap-2">
                     <span className="text-xs font-bold text-amber-800 dark:text-amber-300 whitespace-nowrap">
                       Adding to {addingColKey.replace('-', ' ').toUpperCase()}:
@@ -387,6 +400,7 @@ export const RosterSpreadsheet: React.FC<RosterSpreadsheetProps> = ({
                           else if (addingColKey === 'nxt-mid') handleAddNew('NXT', 'Middle');
                           else if (addingColKey === 'nxt-low') handleAddNew('NXT', 'Low');
                           else if (addingColKey === 'nxt-female') handleAddNew('NXT', 'Female');
+                          else if (addingColKey === 'nxt-tag') handleAddNew('NXT', 'Tag Team');
                         } else if (e.key === 'Escape') {
                           setAddingColKey(null);
                         }
@@ -410,6 +424,7 @@ export const RosterSpreadsheet: React.FC<RosterSpreadsheetProps> = ({
                         else if (addingColKey === 'nxt-mid') handleAddNew('NXT', 'Middle');
                         else if (addingColKey === 'nxt-low') handleAddNew('NXT', 'Low');
                         else if (addingColKey === 'nxt-female') handleAddNew('NXT', 'Female');
+                        else if (addingColKey === 'nxt-tag') handleAddNew('NXT', 'Tag Team');
                       }}
                       className="px-2.5 py-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold"
                     >
@@ -446,6 +461,7 @@ export const RosterSpreadsheet: React.FC<RosterSpreadsheetProps> = ({
               const nMid = nxtMiddle[rowIndex];
               const nLow = nxtLow[rowIndex];
               const nFem = nxtFemale[rowIndex];
+              const nTag = nxtTag[rowIndex];
 
               return (
                 <tr
@@ -652,8 +668,19 @@ export const RosterSpreadsheet: React.FC<RosterSpreadsheetProps> = ({
                     onStartEdit={() => nFem && startEditing(nFem.id, nFem.name)}
                     onSaveEdit={() => nFem && saveEditing(nFem.id)}
                     onDelete={() => nFem && onDeleteSuperstar(nFem.id)}
-                    bgColor="bg-yellow-50/90 dark:bg-yellow-950/25 hover:bg-yellow-100/80 dark:hover:bg-yellow-900/40"
+                    bgColor="bg-yellow-50/90 dark:bg-yellow-950/25 hover:bg-yellow-100/80 dark:hover:bg-yellow-900/40 border-r border-yellow-300 dark:border-yellow-800"
                     textColor="text-slate-900 dark:text-yellow-100"
+                  />
+                  <Cell
+                    item={nTag}
+                    isEditing={editingCellId === nTag?.id}
+                    editValue={editValue}
+                    setEditValue={setEditValue}
+                    onStartEdit={() => nTag && startEditing(nTag.id, nTag.name)}
+                    onSaveEdit={() => nTag && saveEditing(nTag.id)}
+                    onDelete={() => nTag && onDeleteSuperstar(nTag.id)}
+                    bgColor="bg-yellow-100/70 dark:bg-yellow-950/35 hover:bg-yellow-200/80 dark:hover:bg-yellow-900/50"
+                    textColor="text-slate-900 dark:text-yellow-100 font-medium"
                   />
                 </tr>
               );

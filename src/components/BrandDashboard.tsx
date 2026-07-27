@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Superstar, BrandType, TierType, ChampionEntry, RivalryEntry, ShowPlan, MatchCardItem } from '../types';
 import { Plus, Trash2, Edit2, Flame, Zap, Tv, Crown, Swords, Calendar, UserPlus, Check, X } from 'lucide-react';
-import { calculateDaysBetween, formatAcquiredDate, getDisplayAcquiredDate, UNIVERSE_MONTH_ORDER } from '../utils/universeTime';
+import { calculateDaysBetween, formatAcquiredDate, getDisplayAcquiredDate, UNIVERSE_MONTH_ORDER, UNIVERSE_WEEKS } from '../utils/universeTime';
 
 interface BrandDashboardProps {
   brand: BrandType;
@@ -51,7 +51,7 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
   const [champPrevWinner, setChampPrevWinner] = useState('');
   const [sinceYear, setSinceYear] = useState(1);
   const [sinceMonth, setSinceMonth] = useState('May');
-  const [sinceWeek, setSinceWeek] = useState('Week 1');
+  const [sinceWeek, setSinceWeek] = useState(UNIVERSE_WEEKS[0]);
   const [champDefenses, setChampDefenses] = useState(0);
 
   const autoCalculatedDays = calculateDaysBetween(sinceYear, sinceMonth, sinceWeek);
@@ -161,7 +161,7 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
         <div className="flex items-center gap-3 text-xs">
           <div className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700">
             <span className="text-slate-400 block text-[10px] uppercase">Roster Count</span>
-            <span className="text-base font-black text-white">{brandSuperstars.length}</span>
+            <span className="text-base font-black text-white">{brandSuperstars.filter(s => s.tier !== 'Tag Team').length}</span>
           </div>
           <div className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700">
             <span className="text-slate-400 block text-[10px] uppercase">Champions</span>
@@ -283,7 +283,7 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
                     setChampPrevWinner('');
                     setSinceYear(1);
                     setSinceMonth('May');
-                    setSinceWeek('Week 1');
+                    setSinceWeek(UNIVERSE_WEEKS[0]);
                     setChampDefenses(0);
                     setIsCreatingChampion(true);
                   }}
@@ -377,10 +377,9 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
                         onChange={(e) => setSinceWeek(e.target.value)}
                         className="bg-slate-950 border border-slate-700 rounded p-1 text-white text-[10px]"
                       >
-                        <option value="Week 1">Week 1</option>
-                        <option value="Week 2">Week 2</option>
-                        <option value="Week 3">Week 3</option>
-                        <option value="Week 4">Week 4</option>
+                        {UNIVERSE_WEEKS.map((w) => (
+                          <option key={w} value={w}>{w}</option>
+                        ))}
                       </select>
                     </div>
                   </div>

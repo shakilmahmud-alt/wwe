@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ChampionEntry, Superstar } from '../types';
 import { Crown, Plus, Trash2, Edit2, ShieldAlert, Award, Trophy } from 'lucide-react';
-import { calculateDaysBetween, formatAcquiredDate, getDisplayAcquiredDate, UNIVERSE_MONTH_ORDER } from '../utils/universeTime';
+import { calculateDaysBetween, formatAcquiredDate, getDisplayAcquiredDate, UNIVERSE_MONTH_ORDER, UNIVERSE_WEEKS } from '../utils/universeTime';
 
 interface ChampListViewProps {
   champions: ChampionEntry[];
@@ -26,7 +26,7 @@ export const ChampListView: React.FC<ChampListViewProps> = ({
   const [currentChampion, setCurrentChampion] = useState('');
   const [sinceYear, setSinceYear] = useState(1);
   const [sinceMonth, setSinceMonth] = useState('May');
-  const [sinceWeek, setSinceWeek] = useState('Week 1');
+  const [sinceWeek, setSinceWeek] = useState(UNIVERSE_WEEKS[0]);
   const [defenses, setDefenses] = useState(2);
   const [previousChampion, setPreviousChampion] = useState('');
 
@@ -52,7 +52,7 @@ export const ChampListView: React.FC<ChampListViewProps> = ({
     setCurrentChampion('');
     setSinceYear(1);
     setSinceMonth('May');
-    setSinceWeek('Week 1');
+    setSinceWeek(UNIVERSE_WEEKS[0]);
     setDefenses(2);
     setPreviousChampion('');
   };
@@ -157,10 +157,9 @@ export const ChampListView: React.FC<ChampListViewProps> = ({
                   onChange={(e) => setSinceWeek(e.target.value)}
                   className="w-full p-2 bg-slate-900 border border-slate-700 rounded text-white text-xs font-semibold focus:border-yellow-500"
                 >
-                  <option value="Week 1">Week 1</option>
-                  <option value="Week 2">Week 2</option>
-                  <option value="Week 3">Week 3</option>
-                  <option value="Week 4">Week 4</option>
+                  {UNIVERSE_WEEKS.map((w) => (
+                    <option key={w} value={w}>{w}</option>
+                  ))}
                 </select>
               </div>
             </div>
