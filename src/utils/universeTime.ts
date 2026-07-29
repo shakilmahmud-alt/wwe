@@ -151,7 +151,7 @@ export const calculateChampionsReign = (
   let year = 1; // Assumed start year for historyMatrix
   let prevMonthIdx = -1;
 
-  const chronologicalRows = allHistory.map((row) => {
+  const chronologicalRows = allHistory.map((row, index) => {
     const monthIdx = UNIVERSE_MONTH_ORDER.indexOf(row.month);
     if (prevMonthIdx !== -1 && monthIdx < prevMonthIdx) {
       year++;
@@ -159,11 +159,16 @@ export const calculateChampionsReign = (
     prevMonthIdx = monthIdx >= 0 ? monthIdx : prevMonthIdx;
 
     let week = UNIVERSE_WEEKS[1]; // default to Day 7
-    const pleName = row.mainPle || row.nxtPle || '';
-    if (pleName) {
-      const event = calendarEvents.find(e => e.eventName.trim().toLowerCase() === pleName.trim().toLowerCase() && e.month === row.month);
-      if (event && event.date) {
-        week = event.date;
+    if (index === 0) {
+      // The baseline row (h1, Year 1 May) represents champions active from Day 1 of Universe Mode
+      week = UNIVERSE_WEEKS[0];
+    } else {
+      const pleName = row.mainPle || row.nxtPle || '';
+      if (pleName) {
+        const event = calendarEvents.find(e => e.eventName.trim().toLowerCase() === pleName.trim().toLowerCase() && e.month === row.month);
+        if (event && event.date) {
+          week = event.date;
+        }
       }
     }
     return { ...row, calcYear: year, calcWeek: week };
