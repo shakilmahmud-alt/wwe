@@ -1,3 +1,5 @@
+import { ChampionEntry, HistoryMatrixRow, CalendarEvent, UniverseTime } from '../types';
+
 export const UNIVERSE_MONTH_DAYS: Record<string, number> = {
   May: 31,
   June: 30,
@@ -114,4 +116,115 @@ export const getDisplayAcquiredDate = (acquiredDate?: string): string => {
   else if (week.includes('Day 28')) shortWeek = 'Day 28 (PLE)';
   else if (week.includes('Month End') || week.includes('Day 30')) shortWeek = 'Month End';
   return `Yr ${year} • ${month} (${shortWeek})`;
+};
+
+const TITLE_TO_MATRIX_PATH: Record<string, (row: HistoryMatrixRow) => string | undefined> = {
+  'World Heavyweight Championship': (r) => r.champions?.['c-raw-whc'] || r.raw?.whc,
+  'Men\'s Intercontinental Championship': (r) => r.champions?.['c-raw-ic'] || r.raw?.ic,
+  'World Tag Team Championship': (r) => r.champions?.['c-raw-tag'] || r.raw?.tag,
+  'Women\'s World Championship': (r) => r.champions?.['c-raw-wwc'] || r.raw?.wwc,
+  'Women\'s Intercontinental Championship': (r) => r.champions?.['c-raw-wic'] || r.raw?.wic,
+  'Undisputed WWE Championship': (r) => r.champions?.['c-sd-und'] || r.sd?.und,
+  'Men\'s United States Championship': (r) => r.champions?.['c-sd-us'] || r.sd?.us,
+  'WWE Tag Team Championship': (r) => r.champions?.['c-sd-tag'] || r.sd?.tag,
+  'WWE Women\'s Championship': (r) => r.champions?.['c-sd-wwe'] || r.sd?.wwe,
+  'Women\'s United States Championship': (r) => r.champions?.['c-sd-wus'] || r.sd?.wus,
+  'NXT Championship': (r) => r.champions?.['c-nxt-nxt'] || r.nxt?.nxt,
+  'Men\'s NXT NA Championship': (r) => r.champions?.['c-nxt-na'] || r.nxt?.na,
+  'NXT Tag Team Championship': (r) => r.champions?.['c-nxt-tag'] || r.nxt?.tag,
+  'NXT Women\'s Championship': (r) => r.champions?.['c-nxt-wnxt'] || r.nxt?.wnxt,
+  'Women\'s NXT NA Championship': (r) => r.champions?.['c-nxt-wna'] || r.nxt?.wna,
+  'WWE Women\'s Tag Team Championship': (r) => r.champions?.['c-joint-wtag'] || r.joint?.wtag,
+};
+
+export const calculateChampionsReign = (
+  champions: ChampionEntry[],
+  historyMatrix: HistoryMatrixRow[],
+  emptyMatrix: HistoryMatrixRow[],
+  calendarEvents: CalendarEvent[],
+  currentTime: UniverseTime
+): ChampionEntry[] => {
+  const allHistory = [...(historyMatrix || []), ...(emptyMatrix || [])];
+  if (allHistory.length === 0) return champions;
+
+  // Determine the Year, Month, Week for each row in the combined chronological history
+  let year = 1; // Assumed start year for historyMatrix
+  let prevMonthIdx = -1;
+
+  const chronologicalRows = allHistory.map((row) => {
+    const monthIdx = UNIVERSE_MONTH_ORDER.indexOf(row.month);
+    if (prevMonthIdx !== -1 && monthIdx < prevMonthIdx) {
+      year++;
+    }
+    prevMonthIdx = monthIdx >= 0 ? monthIdx : prevMonthIdx;
+
+    let week = UNIVERSE_WEEKS[1]; // default to Day 7
+    const pleName = row.mainPle || row.nxtPle || '';
+    if (pleName) {
+      const event = calendarEvents.find(e => e.eventName === pleName && e.month === row.month);
+      if (event && event.date) {
+        week = event.date;
+      }
+    }
+    return { ...row, calcYear: year, calcWeek: week };
+  });
+
+  const currentTotalDays = getUniverseTotalDays(currentTime.year, currentTime.month, currentTime.week);
+
+  return champions.map(champ => {
+    const getter = TITLE_TO_MATRIX_PATH[champ.titleName];
+    if (!getter) return { ...champ, daysHeld: 0 };
+
+    let currentChampName = '';
+    let currentChampAcquired = { year: 1, month: 'May', week: UNIVERSE_WEEKS[0] };
+    
+    let prevChampName = '';
+    let prevChampAcquired = { year: 1, month: 'May', week: UNIVERSE_WEEKS[0] };
+    let prevChampDays = 0;
+
+    for (const row of chronologicalRows) {
+      // If this row is in the future relative to currentTime, stop processing
+      const rowTotalDays = getUniverseTotalDays(row.calcYear, row.month, row.calcWeek);
+      if (rowTotalDays > currentTotalDays) {
+        break;
+      }
+
+      const champInRow = getter(row)?.trim();
+      
+      // If we see a valid champion name and it's different from the current
+      if (champInRow && champInRow.toLowerCase() !== currentChampName.toLowerCase()) {
+        if (currentChampName !== '') {
+          prevChampName = currentChampName;
+          prevChampDays = calculateDaysBetween(
+            currentChampAcquired.year, currentChampAcquired.month, currentChampAcquired.week,
+            row.calcYear, row.month, row.calcWeek
+          );
+        }
+
+        currentChampName = champInRow;
+        currentChampAcquired = { year: row.calcYear, month: row.month, week: row.calcWeek };
+      }
+    }
+
+    let currentDaysHeld = 0;
+    if (currentChampName) {
+      currentDaysHeld = calculateDaysBetween(
+        currentChampAcquired.year, currentChampAcquired.month, currentChampAcquired.week,
+        currentTime.year, currentTime.month, currentTime.week
+      );
+    }
+
+    let prevChampString = champ.previousChampion;
+    if (prevChampName) {
+      prevChampString = `${prevChampName} (${prevChampDays} Days)`;
+    }
+
+    return {
+      ...champ,
+      currentChampion: currentChampName || champ.currentChampion,
+      previousChampion: prevChampString,
+      daysHeld: currentDaysHeld,
+      acquiredDate: formatAcquiredDate(currentChampAcquired.year, currentChampAcquired.month, currentChampAcquired.week)
+    };
+  });
 };

@@ -84,36 +84,19 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
       icon: <Trophy className="w-4 h-4 text-pink-400" />,
       colorClass: 'hover:text-pink-400'
     },
-    {
-      id: 'calendar',
-      label: 'Calender',
-      icon: <Calendar className="w-4 h-4 text-purple-400" />,
-      colorClass: 'hover:text-purple-400'
-    },
+
     {
       id: 'champ-list',
-      label: 'Champ List',
-      icon: <Crown className="w-4 h-4 text-yellow-400" />,
-      colorClass: 'hover:text-yellow-400'
+      label: 'Champ Archive',
+      icon: <History className="w-4 h-4 text-purple-400" />,
+      colorClass: 'hover:text-purple-400'
     },
-    {
-      id: 'title-history',
-      label: '2K25 History',
-      icon: <History className="w-4 h-4 text-amber-500" />,
-      colorClass: 'hover:text-amber-400',
-      badge: 'NEW'
-    },
+
     {
       id: 'summary',
       label: 'Summary',
       icon: <PieChart className="w-4 h-4 text-cyan-400" />,
       colorClass: 'hover:text-cyan-400'
-    },
-    {
-      id: 'rivalry',
-      label: 'Rivalry',
-      icon: <Swords className="w-4 h-4 text-orange-400" />,
-      colorClass: 'hover:text-orange-400'
     }
   ];
 

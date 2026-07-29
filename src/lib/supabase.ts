@@ -84,10 +84,12 @@ export async function saveToSupabase(data: AppState): Promise<{ success: boolean
       const formattedEvents = data.calendarEvents.map((ev) => ({
         id: ev.id,
         title: ev.eventName,
+        month: ev.month,
         date_str: ev.date,
         type: ev.type === 'PLE' ? 'PPV' : ev.type,
         brand: ev.brand,
-        arena: ev.location || null
+        arena: ev.location || null,
+        main_event: ev.mainEvent || null
       }));
       await supabase.from('calendar_events').upsert(formattedEvents, { onConflict: 'id' });
     }
@@ -253,12 +255,13 @@ export async function loadFromSupabase(): Promise<{ success: boolean; data?: App
       if (eventsRows && eventsRows.length > 0) {
         state.calendarEvents = eventsRows.map((r: any) => ({
           id: r.id,
-          month: 'May',
+          month: r.month || 'January',
           eventName: r.title,
           brand: r.brand,
           type: (r.type === 'PPV' ? 'PLE' : r.type) as any,
           date: r.date_str || '',
           location: r.arena || undefined,
+          mainEvent: r.main_event || undefined,
           isCompleted: false
         }));
       }

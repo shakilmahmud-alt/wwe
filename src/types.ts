@@ -62,6 +62,8 @@ export interface AchievementMale {
   // Legacy fields (optional for backwards compatibility):
   royalRumbleCount?: number;
   mitbCount?: number;
+  royalRumble?: boolean;
+  mitb?: boolean;
   chamberCount?: number;
   grandSlam?: boolean;
   motyCount?: number;
@@ -73,13 +75,31 @@ export interface AchievementMale {
 export interface AchievementFemale {
   id: string;
   superstarName: string;
-  brand: BrandType;
-  royalRumbleCount: number;
-  mitbCount: number;
-  chamberCount: number;
-  grandSlam: boolean;
-  rivalryOfYearCount: number;
-  titleReignsCount: number;
+  brand?: BrandType;
+  
+  // Title Checkmarks
+  rawWomen?: boolean;
+  sdWomen?: boolean;
+  nxt?: boolean;
+  womenTag?: boolean;
+  nxtTag?: boolean;
+  nxtUk?: boolean;
+  nxtNa?: boolean;
+  ic?: boolean;
+  us?: boolean;
+  
+  // Historic Grand Slam Order
+  grandSlamOrder?: number;
+  
+  // Legacy fields
+  royalRumbleCount?: number;
+  mitbCount?: number;
+  royalRumble?: boolean;
+  mitb?: boolean;
+  chamberCount?: number;
+  grandSlam?: boolean;
+  rivalryOfYearCount?: number;
+  titleReignsCount?: number;
   notes?: string;
 }
 
@@ -106,6 +126,17 @@ export interface ChampionEntry {
   acquiredDate?: string;
 }
 
+export interface ArchiveEntry {
+  id: string;
+  brand: 'RAW' | 'SmackDown' | 'NXT' | 'Joint';
+  titleName: string;
+  who: string;
+  times: number | string;
+  reign: number | string;
+  month: number | string;
+  order: number;
+}
+
 export interface RivalryEntry {
   id: string;
   name: string;
@@ -129,8 +160,32 @@ export type TabPath =
   | 'calendar'
   | 'champ-list'
   | 'summary'
-  | 'rivalry'
-  | 'title-history';
+  | 'rivalry';
+
+export interface MatrixColumn {
+  id: string;
+  brand: 'RAW' | 'SmackDown' | 'NXT' | 'Joint';
+  titleName: string;
+}
+
+export interface HistoryMatrixRow {
+  id: string;
+  month: string;
+  mainPle: string;
+  raw?: { whc: string; ic: string; tag: string; wwc: string; wic: string };
+  sd?: { und: string; us: string; tag: string; wwe: string; wus: string };
+  nxtMonth: string;
+  nxtPle: string;
+  nxt?: { nxt: string; na: string; tag: string; wnxt: string; wna: string };
+  joint?: { wtag: string };
+  champions?: Record<string, string>;
+}
+
+export interface UniverseTime {
+  year: number;
+  month: string;
+  week: string;
+}
 
 export interface AppState {
   superstars: Superstar[];
@@ -139,8 +194,13 @@ export interface AppState {
   achievementsWomen: AchievementFemale[];
   calendarEvents: CalendarEvent[];
   champions: ChampionEntry[];
+  championArchive?: ArchiveEntry[];
   rivalries: RivalryEntry[];
   rawShowPlans: ShowPlan[];
   sdShowPlans: ShowPlan[];
   nxtShowPlans: ShowPlan[];
+  historyMatrix?: HistoryMatrixRow[];
+  matrixColumns?: MatrixColumn[];
+  emptyMatrix?: HistoryMatrixRow[];
+  universeTime?: UniverseTime;
 }

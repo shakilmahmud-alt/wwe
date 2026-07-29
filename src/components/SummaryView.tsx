@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { AppState } from '../types';
-import { PieChart, Users, Crown, Swords, Calendar, Download, Upload, RotateCcw, Flame, Zap, Tv, Award, Trophy, Clock } from 'lucide-react';
+import { PieChart, Users, Crown, Swords, Calendar, Download, Upload, RotateCcw, Flame, Zap, Tv, Award, Trophy, Clock, Trash2 } from 'lucide-react';
 import { getDisplayAcquiredDate } from '../utils/universeTime';
+import { CalendarView } from './CalendarView';
 
 interface SummaryViewProps {
   appState: AppState;
@@ -9,6 +10,13 @@ interface SummaryViewProps {
   onClearAllData: () => void;
   onExportJSON: () => void;
   onImportJSON: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onUpdateMatrix?: (key: 'historyMatrix' | 'emptyMatrix', newMatrix: any[]) => void;
+  onUpdateMatrixColumns?: (newColumns: any[]) => void;
+  onUpdateTime?: (newTime: any) => void;
+  onAddCalendarEvent: (event: any) => void;
+  onUpdateCalendarEvent: (event: any) => void;
+  onToggleCalendarComplete: (id: string) => void;
+  onDeleteCalendarEvent: (id: string) => void;
 }
 
 export const SummaryView: React.FC<SummaryViewProps> = ({
@@ -16,95 +24,106 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
   onLoadSampleData,
   onClearAllData,
   onExportJSON,
-  onImportJSON
+  onImportJSON,
+  onAddCalendarEvent,
+  onUpdateCalendarEvent,
+  onToggleCalendarComplete,
+  onDeleteCalendarEvent,
+  onUpdateMatrix,
+  onUpdateMatrixColumns
 }) => {
   const { superstars, womenTagTeams, champions, rivalries, calendarEvents } = appState;
   const [matrixBrand, setMatrixBrand] = useState<'All' | 'RAW' | 'SmackDown' | 'NXT'>('All');
 
-  const YEAR_1_MATRIX = [
+  const [showAddColModal, setShowAddColModal] = useState(false);
+  const [newColBrand, setNewColBrand] = useState<'RAW'|'SmackDown'|'NXT'|'Joint'>('RAW');
+  const [newColTitle, setNewColTitle] = useState('');
+
+  const handleAddRow = (matrixKey: 'historyMatrix' | 'emptyMatrix') => {
+    if (!onUpdateMatrix || !appState[matrixKey]) return;
+    const newMatrix = [...appState[matrixKey]!];
+    newMatrix.push({
+      id: 'row-' + Date.now(),
+      month: 'New Month',
+      mainPle: '',
+      nxtMonth: '',
+      nxtPle: '',
+      champions: {}
+    } as any);
+    onUpdateMatrix(matrixKey, newMatrix);
+  };
+
+  const handleDeleteRow = (matrixKey: 'historyMatrix' | 'emptyMatrix', rowIndex: number) => {
+    if (!onUpdateMatrix || !appState[matrixKey]) return;
+    const newMatrix = [...appState[matrixKey]!];
+    newMatrix.splice(rowIndex, 1);
+    onUpdateMatrix(matrixKey, newMatrix);
+  };
+
+  const handleAddColumn = () => {
+    if (!onUpdateMatrixColumns || !appState.matrixColumns) return;
+    if (!newColTitle.trim()) return;
+    const newColumns = [...appState.matrixColumns, {
+      id: 'c-custom-' + Date.now(),
+      brand: newColBrand,
+      titleName: newColTitle.trim()
+    }];
+    onUpdateMatrixColumns(newColumns);
+    setShowAddColModal(false);
+    setNewColTitle('');
+  };
+
+  const handleDeleteColumn = (colId: string) => {
+    if (!onUpdateMatrixColumns || !appState.matrixColumns) return;
+    if (window.confirm('Are you sure you want to delete this column? This will remove data for it from both matrices.')) {
+      onUpdateMatrixColumns(appState.matrixColumns.filter(c => c.id !== colId));
+    }
+  };
+
+
+  const handleCellChange = (matrixKey: 'historyMatrix' | 'emptyMatrix', rowIndex: number, fieldPath: string, newValue: string) => {
+    if (!onUpdateMatrix || !appState[matrixKey]) return;
+    const newMatrix = [...appState[matrixKey]!];
+    const row = JSON.parse(JSON.stringify(newMatrix[rowIndex]));
+    
+    const parts = fieldPath.split('.');
+    if (parts.length === 2) {
+      row[parts[0]][parts[1]] = newValue;
+    } else {
+      row[fieldPath] = newValue;
+    }
+    
+    newMatrix[rowIndex] = row;
+    onUpdateMatrix(matrixKey, newMatrix);
+  };
+
+  const orderedChampions = [...champions].sort((a, b) => {
+    const order: Record<string, number> = { 'RAW': 1, 'SmackDown': 2, 'NXT': 3, 'Joint': 4 };
+    return (order[a.brand] || 99) - (order[b.brand] || 99);
+  });
+
+  const currentUniverseTime = appState.universeTime || { year: 2, month: 'May', week: 'Day 14 (PLE / W3 - 14d)' };
+
+  const displayMatrix1 = appState.historyMatrix && appState.historyMatrix.length > 0 
+    ? appState.historyMatrix 
+    : [];
+
+  const displayMatrix2 = appState.emptyMatrix && appState.emptyMatrix.length > 0
+    ? appState.emptyMatrix
+    : [];
+
+  const matrices = [
     {
-      month: 'May',
-      raw: { whc: 'Gunther', ic: 'Bron Breakker', wwc: 'Rhea Ripley', wic: 'Lyra Valkyria', tag: 'The War Raiders' },
-      sd: { und: 'Cody Rhodes', us: 'Shinsuke', wwe: 'Tiffany Stratton', wus: 'Chelsea Green', tag: '#DIY' },
-      nxt: { nxt: 'Trick Williams', na: 'Oba Femi', wnxt: 'Roxanne', wna: 'Fallon Henley', tag: 'Tony D' },
-      joint: { wtag: 'Bianca & Jade' }
+      key: 'historyMatrix' as const,
+      title: 'Year 1 Month-by-Month Title History Spreadsheet',
+      description: 'Complete chronological breakdown of title holders across May to April (WrestleMania), reflecting all title changes.',
+      data: displayMatrix1
     },
     {
-      month: 'June',
-      raw: { whc: 'Gunther', ic: 'Bron Breakker', wwc: 'Rhea Ripley', wic: 'Lyra Valkyria', tag: 'The War Raiders' },
-      sd: { und: 'Cody Rhodes', us: 'Shinsuke', wwe: 'Tiffany Stratton', wus: 'Chelsea Green', tag: '#DIY' },
-      nxt: { nxt: 'Trick Williams', na: 'Oba Femi', wnxt: 'Roxanne', wna: 'Fallon Henley', tag: 'Tony D' },
-      joint: { wtag: 'Bianca & Jade' }
-    },
-    {
-      month: 'July',
-      raw: { whc: 'Drew McIntyre', ic: 'Bron Breakker', wwc: 'Rhea Ripley', wic: 'Lyra Valkyria', tag: 'The War Raiders' },
-      sd: { und: 'Cody Rhodes', us: 'Randy Orton', wwe: 'Tiffany Stratton', wus: 'Chelsea Green', tag: '#DIY' },
-      nxt: { nxt: 'Trick Williams', na: 'Trick Williams', wnxt: 'Roxanne', wna: 'Fallon Henley', tag: 'The Family' },
-      joint: { wtag: 'Giulia & Fallon' }
-    },
-    {
-      month: 'August',
-      raw: { whc: 'Drew McIntyre', ic: 'Bron Breakker', wwc: 'Rhea Ripley', wic: 'Asuka', tag: 'The War Raiders' },
-      sd: { und: 'Cody Rhodes', us: 'Randy Orton', wwe: 'Tiffany Stratton', wus: 'Chelsea Green', tag: 'The Bloodline' },
-      nxt: { nxt: 'Trick Williams', na: 'Trick Williams', wnxt: 'Giulia', wna: 'Fallon Henley', tag: 'The Family' },
-      joint: { wtag: 'Giulia & Fallon' }
-    },
-    {
-      month: 'September',
-      raw: { whc: 'Drew McIntyre', ic: 'Bron Breakker', wwc: 'Rhea Ripley', wic: 'Asuka', tag: 'The War Raiders' },
-      sd: { und: 'Cody Rhodes', us: 'Randy Orton', wwe: 'Tiffany Stratton', wus: 'Chelsea Green', tag: 'The Bloodline' },
-      nxt: { nxt: 'Trick Williams', na: 'Oba Femi', wnxt: 'Giulia', wna: 'Fallon Henley', tag: 'The Family' },
-      joint: { wtag: 'Giulia & Fallon' }
-    },
-    {
-      month: 'October',
-      raw: { whc: 'Drew McIntyre', ic: 'Bron Breakker', wwc: 'Rhea Ripley', wic: 'Asuka', tag: 'The War Raiders' },
-      sd: { und: 'Cody Rhodes', us: 'Randy Orton', wwe: 'Tiffany Stratton', wus: 'Chelsea Green', tag: 'The Bloodline' },
-      nxt: { nxt: 'Trick Williams', na: 'Oba Femi', wnxt: 'Giulia', wna: 'Fallon Henley', tag: 'The Family' },
-      joint: { wtag: 'Giulia & Fallon' }
-    },
-    {
-      month: 'November',
-      raw: { whc: 'Drew McIntyre', ic: 'Bron Breakker', wwc: 'Rhea Ripley', wic: 'Asuka', tag: 'The War Raiders' },
-      sd: { und: 'Cody Rhodes', us: 'Randy Orton', wwe: 'Tiffany Stratton', wus: 'Chelsea Green', tag: 'The Bloodline' },
-      nxt: { nxt: 'Trick Williams', na: 'Oba Femi', wnxt: 'Roxanne', wna: 'Fallon Henley', tag: 'Chase U' },
-      joint: { wtag: 'Giulia & Fallon' }
-    },
-    {
-      month: 'December',
-      raw: { whc: 'Drew McIntyre', ic: 'Bron Breakker', wwc: 'Rhea Ripley', wic: 'Asuka', tag: 'The New Day' },
-      sd: { und: 'Cody Rhodes', us: 'Randy Orton', wwe: 'Naomi', wus: 'Chelsea Green', tag: 'Brothers of Dest.' },
-      nxt: { nxt: 'Trick Williams', na: 'Oba Femi', wnxt: 'Roxanne', wna: 'Kelani Jordan', tag: 'Chase U' },
-      joint: { wtag: 'Uto & Becky' }
-    },
-    {
-      month: 'January',
-      raw: { whc: 'Drew McIntyre', ic: 'Bron Breakker', wwc: 'Rhea Ripley', wic: 'Asuka', tag: 'The New Day' },
-      sd: { und: 'LA Knight', us: 'Carmelo Hayes', wwe: 'Naomi', wus: 'Naomi', tag: 'Brothers of Dest.' },
-      nxt: { nxt: 'Trick Williams', na: 'Oba Femi', wnxt: 'Roxanne', wna: 'Kelani Jordan', tag: 'Dudley Boyz' },
-      joint: { wtag: 'Uto & Becky' }
-    },
-    {
-      month: 'February',
-      raw: { whc: 'Drew McIntyre', ic: 'Bron Breakker', wwc: 'Rhea Ripley', wic: 'Asuka', tag: 'The New Day' },
-      sd: { und: 'LA Knight', us: 'Carmelo Hayes', wwe: 'Naomi', wus: 'Naomi', tag: 'Wyatt Sicks' },
-      nxt: { nxt: 'Trick Williams', na: 'Oba Femi', wnxt: 'Giulia', wna: 'Kelani Jordan', tag: 'Dudley Boyz' },
-      joint: { wtag: 'Uto & Becky' }
-    },
-    {
-      month: 'March',
-      raw: { whc: 'CM Punk', ic: 'Bron Breakker', wwc: 'Rhea Ripley', wic: 'Asuka', tag: 'The New Day' },
-      sd: { und: 'LA Knight', us: 'Carmelo Hayes', wwe: 'Naomi', wus: 'Naomi', tag: 'Wyatt Sicks' },
-      nxt: { nxt: 'Trick Williams', na: 'Oba Femi', wnxt: 'Giulia', wna: 'Kelani Jordan', tag: 'Dudley Boyz' },
-      joint: { wtag: 'Uto & Becky' }
-    },
-    {
-      month: 'April (WrestleMania)',
-      raw: { whc: 'Gunther', ic: 'Bron Breakker', wwc: 'Rhea Ripley', wic: 'Asuka', tag: 'The War Raiders' },
-      sd: { und: 'Jacob Fatu', us: 'Carmelo Hayes', wwe: 'Jade Cargill', wus: 'Naomi', tag: 'Wyatt Sicks' },
-      nxt: { nxt: 'Trick Williams', na: 'Oba Femi', wnxt: 'Giulia', wna: 'Kelani Jordan', tag: 'Charlie Dempsey' },
-      joint: { wtag: 'Kabuki Warriors' }
+      key: 'emptyMatrix' as const,
+      title: 'Year 2 Month-by-Month Title History Spreadsheet',
+      description: 'Blank slate for your second year of Universe Mode. Track title changes and PPVs.',
+      data: displayMatrix2
     }
   ];
 
@@ -291,6 +310,14 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
         </div>
       </div>
 
+      <CalendarView
+        events={appState.calendarEvents}
+        onAddEvent={onAddCalendarEvent}
+        onUpdateEvent={onUpdateCalendarEvent}
+        onToggleComplete={onToggleCalendarComplete}
+        onDeleteEvent={onDeleteCalendarEvent}
+      />
+
       {/* Active Champions Duration Tracker (Auto-Calculated) */}
       <div className="p-6 rounded-xl bg-gradient-to-br from-slate-900 via-slate-950 to-amber-950/40 border border-amber-500/40 shadow-2xl space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-3">
@@ -300,24 +327,24 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
               Current Universe Champions & Duration Tracker
             </h2>
             <p className="text-xs text-slate-400">
-              Auto-calculated reign duration from acquisition date up to current game time: <span className="text-amber-300 font-bold">Year 2 • May (Week 3)</span>
+              Auto-calculated reign duration from acquisition date up to current game time: <span className="text-amber-300 font-bold">Year {currentUniverseTime.year} • {currentUniverseTime.month} ({currentUniverseTime.week.split(' ')[0]} {currentUniverseTime.week.split(' ')[1]})</span>
             </p>
           </div>
           <div className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs font-bold text-amber-300 flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5" /> 1 Year Complete • Yr 2 Active
+            <Clock className="w-3.5 h-3.5" /> {currentUniverseTime.year > 1 ? `${currentUniverseTime.year - 1} Year Complete • ` : ''}Yr {currentUniverseTime.year} Active
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-          {champions.map((c) => (
-            <div key={c.id} className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-amber-500/60 transition shadow-lg flex flex-col justify-between">
+          {orderedChampions.map((c) => (
+            <div key={c.id} className={`p-3.5 rounded-xl border transition shadow-lg flex flex-col justify-between ${c.brand === 'RAW' ? 'bg-red-950/40 border-red-500/50 hover:border-red-400 hover:bg-red-950/60' : c.brand === 'SmackDown' ? 'bg-blue-950/40 border-blue-500/50 hover:border-blue-400 hover:bg-blue-950/60' : c.brand === 'NXT' ? 'bg-yellow-950/40 border-yellow-500/50 hover:border-yellow-400 hover:bg-yellow-950/60' : 'bg-pink-950/40 border-pink-500/50 hover:border-pink-400 hover:bg-pink-950/60'}`}>
               <div>
                 <div className="flex items-center justify-between gap-2 mb-1.5">
                   <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${
                     c.brand === 'RAW' ? 'bg-red-950 text-red-300 border border-red-800' :
                     c.brand === 'SmackDown' ? 'bg-blue-950 text-blue-300 border border-blue-800' :
                     c.brand === 'NXT' ? 'bg-yellow-950 text-yellow-300 border border-yellow-800' :
-                    'bg-purple-950 text-purple-300 border border-purple-800'
+                    'bg-pink-950 text-pink-300 border border-pink-800'
                   }`}>
                     {c.brand}
                   </span>
@@ -343,117 +370,161 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
         </div>
       </div>
 
-      {/* Year 1 Month-by-Month Championship Matrix Spreadsheet (Like Image 3) */}
-      <div className="p-6 rounded-xl bg-slate-900 border border-slate-800 shadow-2xl space-y-4 overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-3">
-          <div>
-            <h2 className="text-lg font-black uppercase text-yellow-400 flex items-center gap-2">
-              <Award className="w-5 h-5 text-yellow-400" />
-              Year 1 Month-by-Month Title History Spreadsheet
-            </h2>
-            <p className="text-xs text-slate-400">
-              Complete chronological breakdown of title holders across May to April (WrestleMania), reflecting all title changes.
-            </p>
-          </div>
+      
+      {/* Year 1 and Year 2 Matrices */}
+      {matrices.map((matrix) => (
+        <div key={matrix.key} className="p-6 rounded-xl bg-slate-900 border border-slate-800 shadow-2xl space-y-4 overflow-hidden">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-3">
+            <div>
+              <h2 className="text-lg font-black uppercase text-yellow-400 flex items-center gap-2">
+                <Award className="w-5 h-5 text-yellow-400" />
+                {matrix.title}
+              </h2>
+              <p className="text-xs text-slate-400">
+                {matrix.description}
+              </p>
+            </div>
 
-          <div className="flex items-center gap-1.5 p-1 bg-slate-950 border border-slate-800 rounded-lg text-xs">
-            {(['All', 'SmackDown', 'RAW', 'NXT'] as const).map((bTab) => (
-              <button
-                key={bTab}
-                onClick={() => setMatrixBrand(bTab)}
-                className={`px-3 py-1 rounded font-bold transition ${
-                  matrixBrand === bTab ? 'bg-yellow-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                {bTab === 'All' ? 'All Brands' : bTab}
-              </button>
-            ))}
+            <div className="flex items-center gap-1.5 p-1 bg-slate-950 border border-slate-800 rounded-lg text-xs">
+              {(['All', 'SmackDown', 'RAW', 'NXT'] as const).map((bTab) => (
+                <button
+                  key={bTab}
+                  onClick={() => setMatrixBrand(bTab)}
+                  className={`px-3 py-1 rounded font-bold transition ${
+                    matrixBrand === bTab ? 'bg-yellow-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {bTab === 'All' ? 'All Brands' : bTab}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+          <div className="overflow-x-auto pb-2">
+            <table className="w-max text-center text-xs border-collapse border-2 border-black min-w-[1200px] text-black bg-white">
+              <thead>
+                {/* Super Header Row */}
+                <tr className="border-b-2 border-black font-extrabold uppercase">
+                  {(matrixBrand === 'All' || matrixBrand === 'RAW' || matrixBrand === 'SmackDown') && (
+                    <th colSpan={2} className={`p-1 border-r-2 border-black ${matrixBrand === 'RAW' ? 'bg-[#fca5a5]' : 'bg-[#93c5fd]'}`}></th>
+                  )}
+                  {(matrixBrand === 'All' || matrixBrand === 'RAW') && (
+                    <th colSpan={(appState.matrixColumns || []).filter(c => c.brand === 'RAW').length} className="p-1 border-r-2 border-black bg-[#fca5a5]">RAW</th>
+                  )}
+                  {(matrixBrand === 'All' || matrixBrand === 'SmackDown') && (
+                    <th colSpan={(appState.matrixColumns || []).filter(c => c.brand === 'SmackDown').length} className="p-1 border-r-2 border-black bg-[#93c5fd]">SmackDown</th>
+                  )}
+                  {(matrixBrand === 'All' || matrixBrand === 'NXT') && (
+                    <>
+                      <th colSpan={2} className="p-1 border-r-2 border-black bg-[#fde047]"></th>
+                      <th colSpan={(appState.matrixColumns || []).filter(c => c.brand === 'NXT').length} className="p-1 border-r-2 border-black bg-[#fde047]">NXT</th>
+                    </>
+                  )}
+                  {(matrixBrand === 'All' || matrixBrand === 'Joint') && (
+                    <th colSpan={(appState.matrixColumns || []).filter(c => c.brand === 'Joint').length} className="p-1 border-black bg-white"></th>
+                  )}
+                  <th className="p-1 border-l-2 border-black bg-slate-900 text-white w-10"></th>
+                </tr>
+                {/* Sub Header Row */}
+                <tr className="border-b-2 border-black font-extrabold whitespace-nowrap">
+                  {(matrixBrand === 'All' || matrixBrand === 'RAW' || matrixBrand === 'SmackDown') && (
+                    <>
+                      <th className={`p-1.5 w-24 border-r border-black ${matrixBrand === 'RAW' ? 'bg-[#fca5a5]' : 'bg-[#93c5fd]'}`}>Month</th>
+                      <th className={`p-1.5 min-w-[120px] border-r-2 border-black ${matrixBrand === 'RAW' ? 'bg-[#fca5a5]' : 'bg-[#93c5fd]'}`}>PPV</th>
+                    </>
+                  )}
+                  
+                  {(appState.matrixColumns || []).filter(c => matrixBrand === 'All' || c.brand === matrixBrand).map(col => {
+                    let bgClass = '';
+                    if (col.brand === 'RAW') bgClass = 'bg-[#fca5a5]';
+                    if (col.brand === 'SmackDown') bgClass = 'bg-[#93c5fd]';
+                    if (col.brand === 'NXT') bgClass = 'bg-[#fde047]';
+                    if (col.brand === 'Joint') bgClass = 'bg-[#c084fc]';
 
-        <div className="overflow-x-auto pb-2">
-          <table className="w-full text-left text-xs border-collapse min-w-[1200px]">
-            <thead>
-              <tr className="border-b-2 border-slate-700 bg-slate-950 text-slate-300 font-extrabold uppercase">
-                <th className="p-2.5 w-32 sticky left-0 bg-slate-950 z-10 border-r border-slate-800">Month</th>
-                {(matrixBrand === 'All' || matrixBrand === 'SmackDown') && (
-                  <>
-                    <th className="p-2.5 text-blue-400 bg-blue-950/20">SD Undisputed WWE</th>
-                    <th className="p-2.5 text-blue-400 bg-blue-950/20">SD Men's US</th>
-                    <th className="p-2.5 text-blue-400 bg-blue-950/20">SD WWE Women's</th>
-                    <th className="p-2.5 text-blue-400 bg-blue-950/20">SD Women's US</th>
-                    <th className="p-2.5 text-blue-400 bg-blue-950/20 border-r border-slate-800">SD Tag Team</th>
-                  </>
-                )}
-                {(matrixBrand === 'All' || matrixBrand === 'RAW') && (
-                  <>
-                    <th className="p-2.5 text-red-400 bg-red-950/20">RAW World Heavyweight</th>
-                    <th className="p-2.5 text-red-400 bg-red-950/20">RAW Men's IC</th>
-                    <th className="p-2.5 text-red-400 bg-red-950/20">RAW Women's World</th>
-                    <th className="p-2.5 text-red-400 bg-red-950/20">RAW Women's IC</th>
-                    <th className="p-2.5 text-red-400 bg-red-950/20 border-r border-slate-800">RAW World Tag</th>
-                  </>
-                )}
-                {(matrixBrand === 'All' || matrixBrand === 'NXT') && (
-                  <>
-                    <th className="p-2.5 text-yellow-400 bg-yellow-950/20">NXT Men's World</th>
-                    <th className="p-2.5 text-yellow-400 bg-yellow-950/20">NXT Men's NA</th>
-                    <th className="p-2.5 text-yellow-400 bg-yellow-950/20">NXT Women's World</th>
-                    <th className="p-2.5 text-yellow-400 bg-yellow-950/20">NXT Women's NA</th>
-                    <th className="p-2.5 text-yellow-400 bg-yellow-950/20">NXT Tag Team</th>
-                  </>
-                )}
-                {matrixBrand === 'All' && (
-                  <th className="p-2.5 text-purple-400 bg-purple-950/20">Women's Tag (Joint)</th>
-                )}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60 font-medium text-slate-200">
-              {YEAR_1_MATRIX.map((row, idx) => {
-                const isWM = row.month.includes('April');
-                return (
-                  <tr key={row.month} className={`hover:bg-slate-800/40 transition ${isWM ? 'bg-amber-950/30 font-bold border-t-2 border-amber-500/50' : idx % 2 === 0 ? 'bg-slate-900/30' : 'bg-transparent'}`}>
-                    <td className={`p-2.5 font-extrabold sticky left-0 z-10 border-r border-slate-800 flex items-center justify-between ${isWM ? 'bg-amber-950 text-amber-300' : 'bg-slate-950 text-slate-300'}`}>
-                      <span>{row.month}</span>
-                      {isWM && <Trophy className="w-3.5 h-3.5 text-amber-400" />}
-                    </td>
-                    {(matrixBrand === 'All' || matrixBrand === 'SmackDown') && (
-                      <>
-                        <td className="p-2.5 text-blue-200">{row.sd.und}</td>
-                        <td className="p-2.5 text-blue-200">{row.sd.us}</td>
-                        <td className="p-2.5 text-blue-200">{row.sd.wwe}</td>
-                        <td className="p-2.5 text-blue-200">{row.sd.wus}</td>
-                        <td className="p-2.5 text-blue-200 border-r border-slate-800">{row.sd.tag}</td>
-                      </>
-                    )}
-                    {(matrixBrand === 'All' || matrixBrand === 'RAW') && (
-                      <>
-                        <td className="p-2.5 text-red-200">{row.raw.whc}</td>
-                        <td className="p-2.5 text-red-200">{row.raw.ic}</td>
-                        <td className="p-2.5 text-red-200">{row.raw.wwc}</td>
-                        <td className="p-2.5 text-red-200">{row.raw.wic}</td>
-                        <td className="p-2.5 text-red-200 border-r border-slate-800">{row.raw.tag}</td>
-                      </>
-                    )}
-                    {(matrixBrand === 'All' || matrixBrand === 'NXT') && (
-                      <>
-                        <td className="p-2.5 text-yellow-200">{row.nxt.nxt}</td>
-                        <td className="p-2.5 text-yellow-200">{row.nxt.na}</td>
-                        <td className="p-2.5 text-yellow-200">{row.nxt.wnxt}</td>
-                        <td className="p-2.5 text-yellow-200">{row.nxt.wna}</td>
-                        <td className="p-2.5 text-yellow-200">{row.nxt.tag}</td>
-                      </>
-                    )}
-                    {matrixBrand === 'All' && (
-                      <td className="p-2.5 text-purple-200 font-bold">{row.joint.wtag}</td>
-                    )}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                    // If it's the first NXT column, we need to inject Month/PPV headers for NXT right before it!
+                    const isFirstNxt = (matrixBrand === 'All' || matrixBrand === 'NXT') && col.id === (appState.matrixColumns || []).find(c => c.brand === 'NXT')?.id;
+
+                    return (
+                      <React.Fragment key={col.id}>
+                        {isFirstNxt && (
+                          <>
+                            <th className="p-1.5 w-24 border-r border-black bg-[#fde047]">Month</th>
+                            <th className="p-1.5 min-w-[120px] border-r-2 border-black bg-[#fde047]">PPV</th>
+                          </>
+                        )}
+                        <th className={`p-1.5 min-w-[120px] border-r border-black relative group ${bgClass}`}>
+                          <div className="flex items-center justify-center gap-1">
+                            <span>{col.titleName}</span>
+                            <button onClick={() => handleDeleteColumn(col.id)} className="hidden group-hover:flex items-center justify-center bg-red-600 hover:bg-red-700 text-white w-4 h-4 rounded-full text-[10px] absolute right-1" title="Delete Column">✕</button>
+                          </div>
+                        </th>
+                      </React.Fragment>
+                    );
+                  })}
+                  <th className="p-1 border-l-2 border-black bg-slate-900 text-center">
+                    <button onClick={() => setShowAddColModal(true)} className="p-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 transition" title="Add Column">+</button>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-black font-semibold text-black">
+                {matrix.data.map((row, idx) => {
+                  const isWM = row.mainPle === 'WrestleMania';
+                  return (
+                    <tr key={row.id || `${row.month}-${idx}`} className={`transition ${isWM ? 'border-b-4 border-black' : ''}`}>
+                      {(matrixBrand === 'All' || matrixBrand === 'RAW' || matrixBrand === 'SmackDown') && (
+                        <>
+                          <td className={`border-r border-black ${matrixBrand === 'RAW' ? 'bg-[#fca5a5]' : 'bg-[#93c5fd]'}`}>
+                            <input value={row.month} onChange={(e) => handleCellChange(matrix.key, idx, 'month', e.target.value)} className="w-full bg-transparent outline-none text-center p-1.5 focus:bg-white/30" />
+                          </td>
+                          <td className={`border-r-2 border-black ${matrixBrand === 'RAW' ? 'bg-[#fca5a5]' : 'bg-[#93c5fd]'}`}>
+                            <input value={row.mainPle || ''} onChange={(e) => handleCellChange(matrix.key, idx, 'mainPle', e.target.value)} className="w-full bg-transparent outline-none text-center p-1.5 focus:bg-white/30" />
+                          </td>
+                        </>
+                      )}
+                      
+                      {(appState.matrixColumns || []).filter(c => matrixBrand === 'All' || c.brand === matrixBrand).map(col => {
+                        let bgClass = '';
+                        if (col.brand === 'RAW') bgClass = 'bg-[#fca5a5]';
+                        if (col.brand === 'SmackDown') bgClass = 'bg-[#93c5fd]';
+                        if (col.brand === 'NXT') bgClass = 'bg-[#fde047]';
+                        if (col.brand === 'Joint') bgClass = 'bg-[#c084fc]';
+
+                        const isFirstNxt = (matrixBrand === 'All' || matrixBrand === 'NXT') && col.id === (appState.matrixColumns || []).find(c => c.brand === 'NXT')?.id;
+
+                        return (
+                          <React.Fragment key={col.id}>
+                            {isFirstNxt && (
+                              <>
+                                <td className="border-r border-black bg-[#fde047]">
+                                  <input value={row.nxtMonth || ''} onChange={(e) => handleCellChange(matrix.key, idx, 'nxtMonth', e.target.value)} className="w-full bg-transparent outline-none text-center p-1.5 focus:bg-black/10" />
+                                </td>
+                                <td className="border-r-2 border-black bg-[#fde047]">
+                                  <input value={row.nxtPle || ''} onChange={(e) => handleCellChange(matrix.key, idx, 'nxtPle', e.target.value)} className="w-full bg-transparent outline-none text-center p-1.5 focus:bg-black/10" />
+                                </td>
+                              </>
+                            )}
+                            <td className={`border-r border-black ${bgClass}`}>
+                              <input 
+                                value={row.champions?.[col.id] || ''} 
+                                onChange={(e) => handleCellChange(matrix.key, idx, `champions.${col.id}`, e.target.value)} 
+                                className="w-full bg-transparent outline-none text-center p-1.5 focus:bg-white/40"
+                              />
+                            </td>
+                          </React.Fragment>
+                        );
+                      })}
+                      <td className="p-1 border-l-2 border-black bg-slate-900 text-center">
+                        <button onClick={() => handleDeleteRow(matrix.key, idx)} className="text-red-400 hover:text-red-300 p-1" title="Delete Row"><Trash2 className="w-4 h-4 mx-auto" /></button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <button onClick={() => handleAddRow(matrix.key)} className="text-xs text-slate-400 border border-slate-800 hover:text-yellow-400 hover:border-yellow-400/50 px-3 py-1.5 rounded font-bold transition w-max block">+ Add Row</button>
         </div>
-      </div>
+      ))}
+
     </div>
   );
 };

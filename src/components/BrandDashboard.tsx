@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Superstar, BrandType, TierType, ChampionEntry, RivalryEntry, ShowPlan, MatchCardItem } from '../types';
+import { Superstar, BrandType, TierType, ChampionEntry, RivalryEntry, ShowPlan, MatchCardItem, UniverseTime } from '../types';
 import { Plus, Trash2, Edit2, Flame, Zap, Tv, Crown, Swords, Calendar, UserPlus, Check, X } from 'lucide-react';
 import { calculateDaysBetween, formatAcquiredDate, getDisplayAcquiredDate, UNIVERSE_MONTH_ORDER, UNIVERSE_WEEKS } from '../utils/universeTime';
 
@@ -18,6 +18,8 @@ interface BrandDashboardProps {
   onAddChampion?: (entry: ChampionEntry) => void;
   onUpdateChampion?: (entry: ChampionEntry) => void;
   onDeleteChampion?: (id: string) => void;
+  universeTime: UniverseTime;
+  onUpdateTime: (time: UniverseTime) => void;
 }
 
 export const BrandDashboard: React.FC<BrandDashboardProps> = ({
@@ -34,7 +36,9 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
   onDeleteShowPlan,
   onAddChampion,
   onUpdateChampion,
-  onDeleteChampion
+  onDeleteChampion,
+  universeTime,
+  onUpdateTime
 }) => {
   const brandSuperstars = superstars.filter((s) => s.brand === brand);
   const brandChampions = champions.filter((c) => c.brand === brand || c.brand === 'Joint');
@@ -143,17 +147,46 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
     <div className="max-w-[1920px] mx-auto p-4 md:p-6 space-y-6 text-slate-100">
       {/* Brand Header Banner */}
       <div className={`p-6 rounded-xl shadow-2xl border ${theme.border} ${theme.cardBg} flex flex-wrap items-center justify-between gap-4`}>
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-slate-900/80 rounded-lg shadow-inner border border-slate-700">
-            {theme.icon}
+        <div className="flex flex-col gap-4 w-full md:w-auto">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-slate-900/80 rounded-lg shadow-inner border border-slate-700">
+              {theme.icon}
+            </div>
+            <div>
+              <h1 className="text-3xl font-black tracking-wider uppercase flex items-center gap-3">
+                <span>{brand} Division & Storylines</span>
+              </h1>
+              <p className="text-xs text-slate-400 mt-1">
+                Manage your {brand} superstars, match cards, champions & active rivalries.
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-3xl font-black tracking-wider uppercase flex items-center gap-3">
-              <span>{brand} Division & Storylines</span>
-            </h1>
-            <p className="text-xs text-slate-400 mt-1">
-              Manage your {brand} superstars, match cards, champions & active rivalries.
-            </p>
+          
+          {/* Universe Time Selector */}
+          <div className="flex items-center gap-2 bg-slate-900/80 p-2 rounded-lg border border-slate-700/50 mt-2 w-max">
+            <Calendar className="w-4 h-4 text-slate-400" />
+            <span className="text-xs text-slate-400 mr-2 font-semibold">CURRENT TIME:</span>
+            <select 
+              value={universeTime.month}
+              onChange={(e) => onUpdateTime({ ...universeTime, month: e.target.value })}
+              className="bg-slate-800 text-sm font-bold text-white border border-slate-700 rounded px-2 py-1 outline-none focus:border-blue-500"
+            >
+              {UNIVERSE_MONTH_ORDER.map(m => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+            <select 
+              value={universeTime.week}
+              onChange={(e) => onUpdateTime({ ...universeTime, week: e.target.value })}
+              className="bg-slate-800 text-sm font-bold text-white border border-slate-700 rounded px-2 py-1 outline-none focus:border-blue-500"
+            >
+              {UNIVERSE_WEEKS.map((w, idx) => {
+                const weekLabel = w.includes('Start of Month') ? 'Week 1' : w.includes('W2') ? 'Week 2' : w.includes('W3') ? 'Week 3' : w.includes('W4') ? 'Week 4' : w.includes('W5') ? 'Week 5' : 'Month End';
+                return (
+                  <option key={w} value={w}>{weekLabel} ({w.split('(')[0].trim()})</option>
+                );
+              })}
+            </select>
           </div>
         </div>
 

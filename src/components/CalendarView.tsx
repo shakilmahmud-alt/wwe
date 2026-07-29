@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { CalendarEvent } from '../types';
-import { Calendar, Plus, Trash2, CheckCircle2, Clock, MapPin, Tv, Flame, Zap } from 'lucide-react';
+import { Calendar, Plus, Trash2, CheckCircle2, Clock, MapPin, Tv, Flame, Zap, Edit2 } from 'lucide-react';
 import { UNIVERSE_MONTH_ORDER, UNIVERSE_WEEKS } from '../utils/universeTime';
 
 interface CalendarViewProps {
   events: CalendarEvent[];
   onAddEvent: (event: CalendarEvent) => void;
+  onUpdateEvent: (event: CalendarEvent) => void;
   onToggleComplete: (id: string) => void;
   onDeleteEvent: (id: string) => void;
   onPopulateDefaultSchedule?: () => void;
@@ -14,10 +15,12 @@ interface CalendarViewProps {
 export const CalendarView: React.FC<CalendarViewProps> = ({
   events,
   onAddEvent,
+  onUpdateEvent,
   onToggleComplete,
   onDeleteEvent,
   onPopulateDefaultSchedule
 }) => {
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [filterBrand, setFilterBrand] = useState<string>('All');
   const [filterType, setFilterType] = useState<string>('All');
   const [month, setMonth] = useState('January');
@@ -38,7 +41,37 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     });
   };
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleEdit = (ev: CalendarEvent) => {
+    setEditingId(ev.id);
+    setEventName(ev.eventName);
+    setMonth(ev.month);
+    
+    if (ev.brand.includes('RAW') || ev.brand.includes('SmackDown') || ev.brand.includes('NXT')) {
+      const brands = [];
+      if (ev.brand.includes('RAW')) brands.push('RAW');
+      if (ev.brand.includes('SmackDown')) brands.push('SmackDown');
+      if (ev.brand.includes('NXT')) brands.push('NXT');
+      setSelectedBrands(brands);
+    }
+
+    setType(ev.type as any);
+    setDateStr(ev.date);
+    setMainEvent(ev.mainEvent || '');
+    setLocation(ev.location || '');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEventName('');
+    setMonth('January');
+    setSelectedBrands(['RAW', 'SmackDown', 'NXT']);
+    setType('PLE');
+    setDateStr(UNIVERSE_WEEKS[1]);
+    setMainEvent('');
+    setLocation('');
+  };
+
+  const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     if (!eventName.trim()) return;
 
@@ -50,8 +83,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       brandStr = [...selectedBrands].sort((a, b) => order.indexOf(a) - order.indexOf(b)).join(', ');
     }
 
-    const newEv: CalendarEvent = {
-      id: `cal-${Date.now()}`,
+    const eventData: CalendarEvent = {
+      id: editingId || `cal-${Date.now()}`,
       month,
       eventName: eventName.trim(),
       brand: brandStr,
@@ -59,14 +92,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       date: dateStr || 'TBD',
       location,
       mainEvent,
-      isCompleted: false
+      isCompleted: editingId ? (events.find(ev => ev.id === editingId)?.isCompleted ?? false) : false
     };
 
-    onAddEvent(newEv);
-    setEventName('');
-    setDateStr(UNIVERSE_WEEKS[1]);
-    setLocation('');
-    setMainEvent('');
+    if (editingId) {
+      onUpdateEvent(eventData);
+    } else {
+      onAddEvent(eventData);
+    }
+    handleCancelEdit();
   };
 
   const monthsList = UNIVERSE_MONTH_ORDER;
@@ -105,12 +139,23 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Form */}
         <div className="p-5 bg-slate-900 border border-slate-800 rounded-xl shadow-lg space-y-4">
-          <h3 className="text-sm font-bold text-purple-400 flex items-center gap-2">
-            <Plus className="w-4 h-4 text-purple-400" />
-            Add Event / PLE to Calendar
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-purple-400 flex items-center gap-2">
+              <Plus className="w-4 h-4 text-purple-400" />
+              {editingId ? 'Edit Event Details' : 'Add Event / PLE to Calendar'}
+            </h3>
+            {editingId && (
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="text-xs text-slate-400 hover:text-white underline"
+              >
+                Cancel Edit
+              </button>
+            )}
+          </div>
 
-          <form onSubmit={handleCreate} className="space-y-3 text-xs">
+          <form onSubmit={handleSave} className="space-y-3 text-xs">
             <div>
               <label className="block text-slate-400 mb-1">Event Name</label>
               <input
@@ -228,9 +273,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
             <button
               type="submit"
-              className="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white font-black rounded-lg transition shadow-lg mt-2 uppercase tracking-wide"
+              className={`w-full py-2 font-black rounded-lg transition shadow-lg mt-2 uppercase tracking-wide ${
+                editingId ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-purple-600 hover:bg-purple-500 text-white'
+              }`}
             >
-              Add to Schedule
+              {editingId ? 'Update Event' : 'Add to Schedule'}
             </button>
           </form>
         </div>
@@ -294,6 +341,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             }).sort((a, b) => {
               const mDiff = UNIVERSE_MONTH_ORDER.indexOf(a.month) - UNIVERSE_MONTH_ORDER.indexOf(b.month);
               if (mDiff !== 0) return mDiff;
+              const wDiff = UNIVERSE_WEEKS.indexOf(a.date) - UNIVERSE_WEEKS.indexOf(b.date);
+              if (wDiff !== 0) return wDiff;
               return a.eventName.localeCompare(b.eventName);
             });
 
@@ -381,12 +430,22 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
                     <div className="pt-3 mt-3 border-t border-slate-800 flex justify-between items-center text-xs">
                       <span className="text-slate-500 font-semibold">{ev.month}</span>
-                      <button
-                        onClick={() => onDeleteEvent(ev.id)}
-                        className="text-slate-500 hover:text-red-400 transition"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEdit(ev)}
+                          className="text-slate-500 hover:text-blue-400 transition"
+                          title="Edit Event"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => onDeleteEvent(ev.id)}
+                          className="text-slate-500 hover:text-red-400 transition"
+                          title="Delete Event"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}

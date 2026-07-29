@@ -53,8 +53,8 @@ export const AchievementsMen: React.FC<AchievementsMenProps> = ({
     return total;
   };
 
-  const isGrandSlamChampion = (a: AchievementMale): boolean => {
-    return computeGrandSlamScore(a) === 5 || (a.grandSlamOrder !== undefined && a.grandSlamOrder > 0);
+  const isGrandSlamChampion = (a: AchievementMale) => {
+    return a.grandSlamOrder !== undefined && a.grandSlamOrder > 0;
   };
 
   const handleToggleTitle = (a: AchievementMale, field: keyof AchievementMale) => {
@@ -89,7 +89,7 @@ export const AchievementsMen: React.FC<AchievementsMenProps> = ({
     const gsScore = computeGrandSlamScore(a);
     const totalScore = computeTotalScore(a);
 
-    if (filterMode === 'GRAND_SLAM') return gsScore === 5 || (a.grandSlamOrder !== undefined && a.grandSlamOrder > 0);
+    if (filterMode === 'GRAND_SLAM') return (a.grandSlamOrder !== undefined && a.grandSlamOrder > 0);
     if (filterMode === 'CLOSE_GS') return gsScore === 4;
     if (filterMode === 'HAS_TITLE') return totalScore > 0;
     return true;
@@ -111,7 +111,7 @@ export const AchievementsMen: React.FC<AchievementsMenProps> = ({
   const totalGrandSlamCount = achievements.filter(isGrandSlamChampion).length;
 
   return (
-    <div className="space-y-6 animate-fadeIn pb-12">
+    <div className="space-y-4 animate-fadeIn flex flex-col h-[calc(100vh-100px)]">
       {/* Header Banner */}
       <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-amber-950/70 to-slate-900 border border-amber-500/30 rounded-2xl p-6 shadow-2xl">
         <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -153,7 +153,7 @@ export const AchievementsMen: React.FC<AchievementsMenProps> = ({
 
       {/* Add Superstar Collapsible Form */}
       {showAddForm && (
-        <div className="p-5 bg-slate-900/95 border border-amber-500/40 rounded-xl shadow-xl animate-fadeIn space-y-4">
+        <div className="p-5 bg-slate-900/95 border border-amber-500/40 rounded-xl shadow-xl animate-fadeIn space-y-4 flex-none">
           <h3 className="text-sm font-bold text-amber-400 flex items-center gap-2">
             <Plus className="w-4 h-4 text-amber-400" /> Log New Superstar to Achievement Spreadsheet
           </h3>
@@ -190,7 +190,7 @@ export const AchievementsMen: React.FC<AchievementsMenProps> = ({
       )}
 
       {/* Filter and Search Controls */}
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-900/90 border border-slate-800 p-4 rounded-xl shadow-lg backdrop-blur-sm">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-900/90 border border-slate-800 p-4 rounded-xl shadow-lg backdrop-blur-sm flex-none">
         <div className="relative w-full md:w-80">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
@@ -273,102 +273,80 @@ export const AchievementsMen: React.FC<AchievementsMenProps> = ({
       </div>
 
       {/* Spreadsheet Table Container */}
-      <div className="bg-slate-950/90 border border-slate-800/80 rounded-2xl shadow-2xl overflow-hidden relative">
-        <div className="overflow-x-auto max-h-[750px] overflow-y-auto custom-scrollbar">
-          <table className="w-full text-xs text-left border-collapse min-w-[1400px]">
-            {/* Table Headers */}
-            <thead className="sticky top-0 z-30 font-bold uppercase tracking-wider text-center shadow-lg">
-              {/* Top Tier Header */}
-              <tr className="border-b border-slate-800 text-white text-[11px]">
-                <th rowSpan={2} className="py-3 px-3 bg-slate-900 text-left text-slate-200 border-r border-slate-800 w-48 sticky left-0 z-40 shadow-r font-black">
-                  Superstar Name
+      <div className="relative flex flex-col flex-1 min-h-0 bg-slate-950/90 border border-slate-800/80 rounded-2xl shadow-2xl overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-auto custom-scrollbar">
+          <table className="w-max text-xs text-left border-collapse min-w-[1400px]">
+            <thead className="bg-slate-950 text-slate-300 uppercase text-xs sticky top-0 z-10 shadow-lg shadow-slate-900/50">
+              <tr>
+                <th rowSpan={2} className="py-3 px-4 border-b-2 border-r border-slate-800 text-left w-[220px] bg-slate-950">
+                  Name
                 </th>
-                <th colSpan={5} className="py-2 px-2 bg-gradient-to-r from-amber-900/90 via-yellow-950 to-amber-900/90 text-amber-300 border-r border-amber-600/50 font-black tracking-widest text-xs shadow-inner">
-                  🏆 CORE GRAND SLAM TITLES (5 BELTS)
+                <th colSpan={5} className="py-1 border-b-2 border-r-2 border-slate-700 font-black tracking-widest text-amber-500 text-center bg-amber-950/40">
+                  Core Grand Slam Titles
                 </th>
-                <th colSpan={4} className="py-2 px-2 bg-gradient-to-r from-blue-900/90 via-slate-900 to-blue-900/90 text-blue-200 border-r border-blue-700/50 font-black tracking-widest text-xs">
-                  ⚡ ADDITIONAL TITLES
+                <th colSpan={4} className="py-1 border-b-2 border-r-2 border-slate-700 font-black tracking-widest text-blue-400 text-center bg-blue-950/40">
+                  Additional Titles
                 </th>
-                <th rowSpan={2} className="py-3 px-2 bg-slate-900 text-slate-200 border-r border-slate-800 w-24 text-center font-black">
-                  Total (9)
+                <th colSpan={2} className="py-1 border-b-2 border-r-2 border-slate-700 font-black tracking-widest text-slate-400 text-center bg-slate-900">
+                  Summary
                 </th>
-                <th rowSpan={2} className="py-3 px-3 bg-gradient-to-b from-amber-950 to-slate-950 text-amber-300 w-52 text-center font-black">
-                  Grand Slam Champion (5)
-                </th>
-                <th rowSpan={2} className="py-3 px-2 bg-slate-900 text-slate-500 w-12 text-center">
-                  Del
+                <th colSpan={3} className="py-1 border-b-2 border-slate-700 font-black tracking-widest text-emerald-500 text-center bg-emerald-950/20">
+                  Extras
                 </th>
               </tr>
-
               {/* Belt Sub-Headers */}
-              <tr className="border-b-2 border-slate-700 text-[10px] text-center">
-                {/* 5 Grand Slam Belts */}
-                <th className="py-2 px-1 bg-amber-950/60 text-amber-200 border-r border-slate-800 w-28" title="Universal / Undisputed WWE">
-                  Universal / Undisputed
-                </th>
-                <th className="py-2 px-1 bg-amber-950/60 text-amber-200 border-r border-slate-800 w-28" title="WWE / World Heavyweight">
-                  WWE / World HW
-                </th>
-                <th className="py-2 px-1 bg-amber-950/60 text-amber-200 border-r border-slate-800 w-28" title="Intercontinental Championship">
-                  Intercontinental
-                </th>
-                <th className="py-2 px-1 bg-amber-950/60 text-amber-200 border-r border-slate-800 w-20" title="United States Championship">
-                  US
-                </th>
-                <th className="py-2 px-1 bg-amber-950/60 text-amber-200 border-r border-amber-600/50 w-24" title="Tag Team Championship">
-                  Tag Team
-                </th>
-
-                {/* 4 Additional Belts */}
-                <th className="py-2 px-1 bg-blue-950/60 text-blue-200 border-r border-slate-800 w-24">
-                  Cruiserweight
-                </th>
-                <th className="py-2 px-1 bg-blue-950/60 text-blue-200 border-r border-slate-800 w-20">
-                  NXT
-                </th>
-                <th className="py-2 px-1 bg-blue-950/60 text-blue-200 border-r border-slate-800 w-20">
-                  UK
-                </th>
-                <th className="py-2 px-1 bg-blue-950/60 text-blue-200 border-r border-slate-800 w-28">
-                  North American
-                </th>
+              <tr className="border-b-2 border-slate-700 text-[10px] text-center bg-slate-900 text-slate-400">
+                <th className="py-2 px-1 border-r border-slate-800 w-28 bg-amber-950/20">Universal/ Undisputed WWE</th>
+                <th className="py-2 px-1 border-r border-slate-800 w-28 bg-amber-950/20">WWE/ World Heavyweight</th>
+                <th className="py-2 px-1 border-r border-slate-800 w-28 bg-amber-950/20">Intercontinental</th>
+                <th className="py-2 px-1 border-r border-slate-800 w-16 bg-amber-950/20">US</th>
+                <th className="py-2 px-1 border-r-2 border-slate-700 w-20 bg-amber-950/20 text-amber-600">Tag Team</th>
+                <th className="py-2 px-1 border-r border-slate-800 w-24 bg-blue-950/20">Cruiserweight</th>
+                <th className="py-2 px-1 border-r border-slate-800 w-16 bg-blue-950/20">NXT</th>
+                <th className="py-2 px-1 border-r border-slate-800 w-16 bg-blue-950/20">UK</th>
+                <th className="py-2 px-1 border-r-2 border-slate-700 w-24 bg-blue-950/20 text-blue-500">North American</th>
+                <th className="py-2 px-1 border-r border-slate-800 w-16">Total (9)</th>
+                <th className="py-2 px-1 border-r-2 border-slate-700 w-24 text-amber-500">Grand Slam Champion (5)</th>
+                <th className="py-2 px-1 border-r border-slate-800 w-20 bg-emerald-950/20">Royal Rumble</th>
+                <th className="py-2 px-1 border-r border-slate-800 w-16 bg-emerald-950/20">MITB</th>
+                <th className="py-2 px-1 w-12">Action</th>
               </tr>
             </thead>
 
             {/* Table Body */}
-            <tbody className="divide-y divide-slate-800/70 text-center font-medium">
+            <tbody className="text-center text-sm font-medium text-slate-300">
               {sortedList.length === 0 ? (
                 <tr>
-                  <td colSpan={13} className="py-12 text-center text-slate-400">
+                  <td colSpan={15} className="py-12 text-center text-slate-500">
                     No achievement records found matching your filter "{searchTerm}".
                   </td>
                 </tr>
               ) : (
-                sortedList.map((a) => {
+                sortedList.map((a, index) => {
                   const gsScore = computeGrandSlamScore(a);
                   const totalScore = computeTotalScore(a);
-                  const isGS = gsScore === 5 || (a.grandSlamOrder !== undefined && a.grandSlamOrder > 0);
+                  const isGS = a.grandSlamOrder !== undefined && a.grandSlamOrder > 0;
 
-                  const cellBase = 'py-2 px-2 border-r border-slate-800/80 transition-colors cursor-pointer select-none';
+                  const cellBase = 'border-r border-b border-slate-800/60 transition-colors cursor-pointer select-none';
+                  const rowBg = index % 2 === 0 ? 'bg-slate-900/40' : 'bg-slate-950/60';
+                  
+                  const coreCheckColor = "text-amber-400 text-lg font-black";
+                  const addCheckColor = "text-blue-400 text-lg font-black";
+                  const extCheckColor = "text-emerald-400 text-lg font-black";
 
                   return (
                     <tr
                       key={a.id}
-                      className={`hover:bg-slate-900 transition-colors duration-150 ${
-                        isGS ? 'bg-gradient-to-r from-red-950/30 via-slate-950 to-amber-950/30 font-semibold' : 'bg-slate-950/40'
-                      }`}
+                      className={`hover:bg-slate-800/80 transition-colors duration-150 ${rowBg}`}
                     >
                       {/* Name Column */}
-                      <td className={`py-2 px-3 border-r border-slate-800 text-left sticky left-0 z-20 ${isGS ? 'bg-slate-950 shadow-md' : 'bg-slate-950/95'}`}>
+                      <td className={`border-r border-b border-slate-800/60 text-center sticky left-0 z-20 ${rowBg}`}>
                         {isGS ? (
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-red-500 font-black text-sm tracking-wide bg-red-950/30 px-2 py-0.5 rounded border border-red-500/40 shadow-sm flex items-center gap-1">
-                              <Flame className="w-3.5 h-3.5 text-red-500 animate-pulse" />
-                              {a.superstarName} {a.grandSlamOrder ? `(${a.grandSlamOrder})` : gsScore === 5 ? '(GS)' : ''}
-                            </span>
-                          </div>
+                          <span className="text-red-500 font-bold tracking-wide">
+                            {a.superstarName} ({a.grandSlamOrder})
+                          </span>
                         ) : (
-                          <span className="text-slate-200 font-bold text-sm hover:text-amber-400 transition">
+                          <span className="text-slate-200 hover:text-amber-400 transition-colors">
                             {a.superstarName}
                           </span>
                         )}
@@ -377,109 +355,99 @@ export const AchievementsMen: React.FC<AchievementsMenProps> = ({
                       {/* 5 Core Grand Slam Titles (Clickable Checkboxes) */}
                       <td
                         onClick={() => handleToggleTitle(a, 'univUndisputed')}
-                        className={`${cellBase} ${a.univUndisputed ? 'bg-amber-950/40 text-amber-300 font-bold' : 'hover:bg-slate-800/40 text-slate-700'}`}
+                        className={`${cellBase} ${a.univUndisputed ? 'bg-amber-950/30' : ''}`}
                       >
-                        {a.univUndisputed ? <Check className="w-4 h-4 mx-auto text-amber-400 font-black stroke-[3]" /> : ''}
+                        {a.univUndisputed ? <span className={coreCheckColor}>✓</span> : ''}
                       </td>
                       <td
                         onClick={() => handleToggleTitle(a, 'worldHw')}
-                        className={`${cellBase} ${a.worldHw ? 'bg-amber-950/40 text-amber-300 font-bold' : 'hover:bg-slate-800/40 text-slate-700'}`}
+                        className={`${cellBase} ${a.worldHw ? 'bg-amber-950/30' : ''}`}
                       >
-                        {a.worldHw ? <Check className="w-4 h-4 mx-auto text-amber-400 font-black stroke-[3]" /> : ''}
+                        {a.worldHw ? <span className={coreCheckColor}>✓</span> : ''}
                       </td>
                       <td
                         onClick={() => handleToggleTitle(a, 'ic')}
-                        className={`${cellBase} ${a.ic ? 'bg-amber-950/40 text-amber-300 font-bold' : 'hover:bg-slate-800/40 text-slate-700'}`}
+                        className={`${cellBase} ${a.ic ? 'bg-amber-950/30' : ''}`}
                       >
-                        {a.ic ? <Check className="w-4 h-4 mx-auto text-amber-400 font-black stroke-[3]" /> : ''}
+                        {a.ic ? <span className={coreCheckColor}>✓</span> : ''}
                       </td>
                       <td
                         onClick={() => handleToggleTitle(a, 'us')}
-                        className={`${cellBase} ${a.us ? 'bg-amber-950/40 text-amber-300 font-bold' : 'hover:bg-slate-800/40 text-slate-700'}`}
+                        className={`${cellBase} ${a.us ? 'bg-amber-950/30' : ''}`}
                       >
-                        {a.us ? <Check className="w-4 h-4 mx-auto text-amber-400 font-black stroke-[3]" /> : ''}
+                        {a.us ? <span className={coreCheckColor}>✓</span> : ''}
                       </td>
                       <td
                         onClick={() => handleToggleTitle(a, 'tagTeam')}
-                        className={`${cellBase} border-r border-amber-600/40 ${a.tagTeam ? 'bg-amber-950/40 text-amber-300 font-bold' : 'hover:bg-slate-800/40 text-slate-700'}`}
+                        className={`${cellBase} border-r-2 border-r-slate-700 ${a.tagTeam ? 'bg-amber-950/30' : ''}`}
                       >
-                        {a.tagTeam ? <Check className="w-4 h-4 mx-auto text-amber-400 font-black stroke-[3]" /> : ''}
+                        {a.tagTeam ? <span className={coreCheckColor}>✓</span> : ''}
                       </td>
 
                       {/* 4 Additional Titles (Clickable Checkboxes) */}
                       <td
                         onClick={() => handleToggleTitle(a, 'cruiserweight')}
-                        className={`${cellBase} ${a.cruiserweight ? 'bg-blue-950/40 text-blue-300 font-bold' : 'hover:bg-slate-800/40 text-slate-700'}`}
+                        className={`${cellBase} ${a.cruiserweight ? 'bg-blue-950/30' : ''}`}
                       >
-                        {a.cruiserweight ? <Check className="w-4 h-4 mx-auto text-blue-400 font-black stroke-[3]" /> : ''}
+                        {a.cruiserweight ? <span className={addCheckColor}>✓</span> : ''}
                       </td>
                       <td
                         onClick={() => handleToggleTitle(a, 'nxt')}
-                        className={`${cellBase} ${a.nxt ? 'bg-blue-950/40 text-blue-300 font-bold' : 'hover:bg-slate-800/40 text-slate-700'}`}
+                        className={`${cellBase} ${a.nxt ? 'bg-blue-950/30' : ''}`}
                       >
-                        {a.nxt ? <Check className="w-4 h-4 mx-auto text-blue-400 font-black stroke-[3]" /> : ''}
+                        {a.nxt ? <span className={addCheckColor}>✓</span> : ''}
                       </td>
                       <td
                         onClick={() => handleToggleTitle(a, 'uk')}
-                        className={`${cellBase} ${a.uk ? 'bg-blue-950/40 text-blue-300 font-bold' : 'hover:bg-slate-800/40 text-slate-700'}`}
+                        className={`${cellBase} ${a.uk ? 'bg-blue-950/30' : ''}`}
                       >
-                        {a.uk ? <Check className="w-4 h-4 mx-auto text-blue-400 font-black stroke-[3]" /> : ''}
+                        {a.uk ? <span className={addCheckColor}>✓</span> : ''}
                       </td>
                       <td
                         onClick={() => handleToggleTitle(a, 'northAmerican')}
-                        className={`${cellBase} ${a.northAmerican ? 'bg-blue-950/40 text-blue-300 font-bold' : 'hover:bg-slate-800/40 text-slate-700'}`}
+                        className={`${cellBase} border-r-2 border-r-slate-700 ${a.northAmerican ? 'bg-blue-950/30' : ''}`}
                       >
-                        {a.northAmerican ? <Check className="w-4 h-4 mx-auto text-blue-400 font-black stroke-[3]" /> : ''}
+                        {a.northAmerican ? <span className={addCheckColor}>✓</span> : ''}
                       </td>
 
                       {/* Total (9) Column */}
-                      <td className="py-2 px-2 border-r border-slate-800 text-center font-black">
-                        <span className={`px-2.5 py-1 rounded-md text-xs font-black shadow-inner inline-block min-w-[32px] ${
-                          totalScore >= 5
-                            ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-amber-500/20'
-                            : totalScore >= 3
-                            ? 'bg-slate-800 text-amber-300 border border-amber-500/30'
-                            : totalScore > 0
-                            ? 'bg-slate-800 text-slate-200'
-                            : 'text-slate-600 bg-slate-900/50'
-                        }`}>
-                          {totalScore}
-                        </span>
+                      <td className="border-r border-b border-slate-800/60 text-center bg-slate-900 font-bold text-slate-300">
+                        {totalScore > 0 ? totalScore : ''}
                       </td>
 
                       {/* Grand Slam Champion (5) Progress Bar Column */}
-                      <td className="py-2 px-3 border-r border-slate-800 text-center">
-                        {gsScore === 5 || isGS ? (
-                          <div className="bg-gradient-to-r from-emerald-600 via-green-500 to-emerald-600 text-white font-black py-1 px-3 rounded-lg shadow-md border border-green-400/50 flex items-center justify-center gap-1.5 animate-pulse">
-                            <Trophy className="w-3.5 h-3.5 text-yellow-300" />
-                            <span>5 / 5 (GRAND SLAM)</span>
-                          </div>
-                        ) : gsScore > 0 ? (
-                          <div className="w-full bg-slate-900 rounded-lg overflow-hidden border border-slate-700/80 p-0.5 shadow-inner">
-                            <div
-                              className={`h-5 rounded-md flex items-center justify-center text-[11px] font-bold transition-all duration-300 ${
-                                gsScore === 4
-                                  ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 w-4/5 font-black'
-                                  : gsScore === 3
-                                  ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-slate-950 w-3/5'
-                                  : gsScore === 2
-                                  ? 'bg-amber-700/80 text-amber-100 w-2/5'
-                                  : 'bg-amber-900/60 text-amber-200 w-1/5'
-                              }`}
-                            >
-                              {gsScore}
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-slate-600 font-medium text-xs">0</span>
-                        )}
+                      <td 
+                        className={`border-r border-b border-slate-800/60 text-center font-bold text-slate-900 ${gsScore === 5 ? 'border-r-8 border-r-green-500' : ''}`}
+                        style={{
+                          background: gsScore > 0 
+                            ? `linear-gradient(to right, #eab308 ${(gsScore / 5) * 100}%, transparent ${(gsScore / 5) * 100}%)`
+                            : 'transparent'
+                        }}
+                      >
+                        {gsScore > 0 ? gsScore : ''}
+                      </td>
+
+                      {/* Royal Rumble Column */}
+                      <td
+                        onClick={() => handleToggleTitle(a, 'royalRumble')}
+                        className={`${cellBase} ${a.royalRumble ? 'bg-emerald-950/20' : ''}`}
+                      >
+                        {a.royalRumble ? <span className={extCheckColor}>✓</span> : ''}
+                      </td>
+
+                      {/* MITB Column */}
+                      <td
+                        onClick={() => handleToggleTitle(a, 'mitb')}
+                        className={`${cellBase} ${a.mitb ? 'bg-emerald-950/20' : ''}`}
+                      >
+                        {a.mitb ? <span className={extCheckColor}>✓</span> : ''}
                       </td>
 
                       {/* Delete Action */}
-                      <td className="py-2 px-2 text-center">
+                      <td className="border-b border-slate-800/60 text-center">
                         <button
                           onClick={() => onDeleteAchievement(a.id)}
-                          className="p-1 text-slate-500 hover:text-red-400 transition rounded hover:bg-slate-800"
+                          className="p-1 text-slate-400 hover:text-red-500 transition rounded"
                           title="Remove Superstar"
                         >
                           <Trash2 className="w-3.5 h-3.5 mx-auto" />
