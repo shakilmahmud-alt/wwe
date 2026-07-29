@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { AppState } from '../types';
-import { PieChart, Users, Crown, Swords, Calendar, Download, Upload, RotateCcw, Flame, Zap, Tv, Award, Trophy, Clock, Trash2 } from 'lucide-react';
-import { getDisplayAcquiredDate } from '../utils/universeTime';
-import { CalendarView } from './CalendarView';
+import { Calendar, Award, Trash2 } from 'lucide-react';
 
 interface SummaryViewProps {
   appState: AppState;
@@ -13,10 +11,10 @@ interface SummaryViewProps {
   onUpdateMatrix?: (key: 'historyMatrix' | 'emptyMatrix', newMatrix: any[]) => void;
   onUpdateMatrixColumns?: (newColumns: any[]) => void;
   onUpdateTime?: (newTime: any) => void;
-  onAddCalendarEvent: (event: any) => void;
-  onUpdateCalendarEvent: (event: any) => void;
-  onToggleCalendarComplete: (id: string) => void;
-  onDeleteCalendarEvent: (id: string) => void;
+  onAddCalendarEvent?: (event: any) => void;
+  onUpdateCalendarEvent?: (event: any) => void;
+  onToggleCalendarComplete?: (id: string) => void;
+  onDeleteCalendarEvent?: (id: string) => void;
 }
 
 export const SummaryView: React.FC<SummaryViewProps> = ({
@@ -25,14 +23,9 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
   onClearAllData,
   onExportJSON,
   onImportJSON,
-  onAddCalendarEvent,
-  onUpdateCalendarEvent,
-  onToggleCalendarComplete,
-  onDeleteCalendarEvent,
   onUpdateMatrix,
   onUpdateMatrixColumns
 }) => {
-  const { superstars, womenTagTeams, champions, rivalries, calendarEvents } = appState;
   const [matrixBrand, setMatrixBrand] = useState<'All' | 'RAW' | 'SmackDown' | 'NXT'>('All');
 
   const [showAddColModal, setShowAddColModal] = useState(false);
@@ -80,7 +73,6 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
     }
   };
 
-
   const handleCellChange = (matrixKey: 'historyMatrix' | 'emptyMatrix', rowIndex: number, fieldPath: string, newValue: string) => {
     if (!onUpdateMatrix || !appState[matrixKey]) return;
     const newMatrix = [...appState[matrixKey]!];
@@ -96,13 +88,6 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
     newMatrix[rowIndex] = row;
     onUpdateMatrix(matrixKey, newMatrix);
   };
-
-  const orderedChampions = [...champions].sort((a, b) => {
-    const order: Record<string, number> = { 'RAW': 1, 'SmackDown': 2, 'NXT': 3, 'Joint': 4 };
-    return (order[a.brand] || 99) - (order[b.brand] || 99);
-  });
-
-  const currentUniverseTime = appState.universeTime || { year: 2, month: 'May', week: 'Day 14 (PLE / W3 - 14d)' };
 
   const displayMatrix1 = appState.historyMatrix && appState.historyMatrix.length > 0 
     ? appState.historyMatrix 
@@ -127,28 +112,20 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
     }
   ];
 
-  const rawCount = superstars.filter((s) => s.brand === 'RAW' && s.tier !== 'Tag Team').length;
-  const sdCount = superstars.filter((s) => s.brand === 'SmackDown' && s.tier !== 'Tag Team').length;
-  const nxtCount = superstars.filter((s) => s.brand === 'NXT' && s.tier !== 'Tag Team').length;
-  const totalRoster = superstars.filter((s) => s.tier !== 'Tag Team').length;
-
-  const femaleCount = superstars.filter((s) => s.tier === 'Female').length;
-  const maleCount = totalRoster - femaleCount;
-
   return (
     <div className="max-w-[1920px] mx-auto p-4 md:p-6 space-y-6 text-slate-100">
       {/* Header Banner */}
       <div className="p-6 bg-gradient-to-r from-cyan-950/80 via-slate-900 to-blue-950/80 border border-cyan-500/40 rounded-xl shadow-2xl flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-cyan-500/20 border border-cyan-500/40 rounded-xl shadow-lg">
-            <PieChart className="w-7 h-7 text-cyan-400" />
+            <Calendar className="w-7 h-7 text-cyan-400" />
           </div>
           <div>
             <h1 className="text-2xl font-black uppercase text-cyan-300 tracking-wider">
-              WWE 2K26 Universe Analytics & Summary
+              WWE 2K26 Universe Calendar
             </h1>
             <p className="text-xs text-slate-300 mt-0.5">
-              High level distribution of your Universe roster, brand split, active titles, and database management.
+              Month-by-month title history spreadsheets across your Universe Mode years.
             </p>
           </div>
         </div>
@@ -176,201 +153,6 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 shadow-lg flex items-center justify-between">
-          <div>
-            <span className="text-xs text-slate-400 font-semibold uppercase block">Total Superstars</span>
-            <span className="text-3xl font-black text-white">{totalRoster}</span>
-          </div>
-          <Users className="w-8 h-8 text-cyan-400 opacity-60" />
-        </div>
-
-        <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 shadow-lg flex items-center justify-between">
-          <div>
-            <span className="text-xs text-slate-400 font-semibold uppercase block">Active Champions</span>
-            <span className="text-3xl font-black text-amber-400">{champions.length}</span>
-          </div>
-          <Crown className="w-8 h-8 text-amber-400 opacity-60" />
-        </div>
-
-        <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 shadow-lg flex items-center justify-between">
-          <div>
-            <span className="text-xs text-slate-400 font-semibold uppercase block">Active Feuds</span>
-            <span className="text-3xl font-black text-orange-400">{rivalries.length}</span>
-          </div>
-          <Swords className="w-8 h-8 text-orange-400 opacity-60" />
-        </div>
-
-        <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 shadow-lg flex items-center justify-between">
-          <div>
-            <span className="text-xs text-slate-400 font-semibold uppercase block">Scheduled Events</span>
-            <span className="text-3xl font-black text-purple-400">{calendarEvents.length}</span>
-          </div>
-          <Calendar className="w-8 h-8 text-purple-400 opacity-60" />
-        </div>
-      </div>
-
-      {/* Brand Breakdown Progress Bars */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="p-5 rounded-xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
-          <h3 className="text-sm font-bold text-slate-200">Brand Distribution</h3>
-
-          <div className="space-y-3">
-            <div>
-              <div className="flex justify-between text-xs font-semibold mb-1">
-                <span className="text-red-400 flex items-center gap-1">
-                  <Flame className="w-3.5 h-3.5" /> RAW
-                </span>
-                <span>{rawCount} Superstars ({totalRoster ? Math.round((rawCount / totalRoster) * 100) : 0}%)</span>
-              </div>
-              <div className="w-full bg-slate-950 h-3 rounded-full overflow-hidden border border-slate-800">
-                <div
-                  className="bg-red-600 h-full transition-all duration-500"
-                  style={{ width: `${totalRoster ? (rawCount / totalRoster) * 100 : 0}%` }}
-                />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs font-semibold mb-1">
-                <span className="text-blue-400 flex items-center gap-1">
-                  <Zap className="w-3.5 h-3.5" /> SmackDown
-                </span>
-                <span>{sdCount} Superstars ({totalRoster ? Math.round((sdCount / totalRoster) * 100) : 0}%)</span>
-              </div>
-              <div className="w-full bg-slate-950 h-3 rounded-full overflow-hidden border border-slate-800">
-                <div
-                  className="bg-blue-600 h-full transition-all duration-500"
-                  style={{ width: `${totalRoster ? (sdCount / totalRoster) * 100 : 0}%` }}
-                />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs font-semibold mb-1">
-                <span className="text-yellow-400 flex items-center gap-1">
-                  <Tv className="w-3.5 h-3.5" /> NXT
-                </span>
-                <span>{nxtCount} Superstars ({totalRoster ? Math.round((nxtCount / totalRoster) * 100) : 0}%)</span>
-              </div>
-              <div className="w-full bg-slate-950 h-3 rounded-full overflow-hidden border border-slate-800">
-                <div
-                  className="bg-yellow-500 h-full transition-all duration-500"
-                  style={{ width: `${totalRoster ? (nxtCount / totalRoster) * 100 : 0}%` }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-5 rounded-xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
-          <h3 className="text-sm font-bold text-slate-200">Gender & Division Split</h3>
-
-          <div className="space-y-3">
-            <div>
-              <div className="flex justify-between text-xs font-semibold mb-1">
-                <span className="text-cyan-400">Men's Division</span>
-                <span>{maleCount} Superstars ({totalRoster ? Math.round((maleCount / totalRoster) * 100) : 0}%)</span>
-              </div>
-              <div className="w-full bg-slate-950 h-3 rounded-full overflow-hidden border border-slate-800">
-                <div
-                  className="bg-cyan-500 h-full transition-all duration-500"
-                  style={{ width: `${totalRoster ? (maleCount / totalRoster) * 100 : 0}%` }}
-                />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs font-semibold mb-1">
-                <span className="text-pink-400">Women's Division</span>
-                <span>{femaleCount} Superstars ({totalRoster ? Math.round((femaleCount / totalRoster) * 100) : 0}%)</span>
-              </div>
-              <div className="w-full bg-slate-950 h-3 rounded-full overflow-hidden border border-slate-800">
-                <div
-                  className="bg-pink-500 h-full transition-all duration-500"
-                  style={{ width: `${totalRoster ? (femaleCount / totalRoster) * 100 : 0}%` }}
-                />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs font-semibold mb-1">
-                <span className="text-purple-400">Women's Tag Teams</span>
-                <span>{womenTagTeams.length} Teams</span>
-              </div>
-              <div className="w-full bg-slate-950 h-3 rounded-full overflow-hidden border border-slate-800">
-                <div
-                  className="bg-purple-500 h-full transition-all duration-500"
-                  style={{ width: `${womenTagTeams.length ? 100 : 0}%` }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <CalendarView
-        events={appState.calendarEvents}
-        onAddEvent={onAddCalendarEvent}
-        onUpdateEvent={onUpdateCalendarEvent}
-        onToggleComplete={onToggleCalendarComplete}
-        onDeleteEvent={onDeleteCalendarEvent}
-      />
-
-      {/* Active Champions Duration Tracker (Auto-Calculated) */}
-      <div className="p-6 rounded-xl bg-gradient-to-br from-slate-900 via-slate-950 to-amber-950/40 border border-amber-500/40 shadow-2xl space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-3">
-          <div>
-            <h2 className="text-lg font-black uppercase text-amber-400 flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-amber-400" />
-              Current Universe Champions & Duration Tracker
-            </h2>
-            <p className="text-xs text-slate-400">
-              Auto-calculated reign duration from acquisition date up to current game time: <span className="text-amber-300 font-bold">Year {currentUniverseTime.year} • {currentUniverseTime.month} ({currentUniverseTime.week.split(' ')[0]} {currentUniverseTime.week.split(' ')[1]})</span>
-            </p>
-          </div>
-          <div className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs font-bold text-amber-300 flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5" /> {currentUniverseTime.year > 1 ? `${currentUniverseTime.year - 1} Year Complete • ` : ''}Yr {currentUniverseTime.year} Active
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-          {orderedChampions.map((c) => (
-            <div key={c.id} className={`p-3.5 rounded-xl border transition shadow-lg flex flex-col justify-between ${c.brand === 'RAW' ? 'bg-red-950/40 border-red-500/50 hover:border-red-400 hover:bg-red-950/60' : c.brand === 'SmackDown' ? 'bg-blue-950/40 border-blue-500/50 hover:border-blue-400 hover:bg-blue-950/60' : c.brand === 'NXT' ? 'bg-yellow-950/40 border-yellow-500/50 hover:border-yellow-400 hover:bg-yellow-950/60' : 'bg-pink-950/40 border-pink-500/50 hover:border-pink-400 hover:bg-pink-950/60'}`}>
-              <div>
-                <div className="flex items-center justify-between gap-2 mb-1.5">
-                  <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${
-                    c.brand === 'RAW' ? 'bg-red-950 text-red-300 border border-red-800' :
-                    c.brand === 'SmackDown' ? 'bg-blue-950 text-blue-300 border border-blue-800' :
-                    c.brand === 'NXT' ? 'bg-yellow-950 text-yellow-300 border border-yellow-800' :
-                    'bg-pink-950 text-pink-300 border border-pink-800'
-                  }`}>
-                    {c.brand}
-                  </span>
-                  {c.acquiredDate && (
-                    <span className="text-[10px] text-purple-300 font-medium">Won: {getDisplayAcquiredDate(c.acquiredDate)}</span>
-                  )}
-                </div>
-                <h4 className="text-xs font-extrabold text-slate-300 line-clamp-1">{c.titleName}</h4>
-                <div className="text-base font-black text-white mt-0.5">{c.currentChampion}</div>
-                {c.previousChampion && (
-                  <div className="text-[10px] text-slate-400 mt-0.5">Prev: {c.previousChampion}</div>
-                )}
-              </div>
-              <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1 text-amber-400 font-black">
-                  <span>{c.daysHeld} Days Reign</span>
-                  <span className="text-[8px] bg-emerald-950 text-emerald-400 border border-emerald-800 px-1 py-0.2 rounded font-bold uppercase">Auto</span>
-                </div>
-                <span className="text-slate-400 font-semibold text-[10px]">{c.defenses} Defenses</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      
       {/* Year 1 and Year 2 Matrices */}
       {matrices.map((matrix) => (
         <div key={matrix.key} className="p-6 rounded-xl bg-slate-900 border border-slate-800 shadow-2xl space-y-4 overflow-hidden">
@@ -440,7 +222,6 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                     if (col.brand === 'NXT') bgClass = 'bg-[#fde047]';
                     if (col.brand === 'Joint') bgClass = 'bg-[#c084fc]';
 
-                    // If it's the first NXT column, we need to inject Month/PPV headers for NXT right before it!
                     const isFirstNxt = (matrixBrand === 'All' || matrixBrand === 'NXT') && col.id === (appState.matrixColumns || []).find(c => c.brand === 'NXT')?.id;
 
                     return (
@@ -524,6 +305,54 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
           <button onClick={() => handleAddRow(matrix.key)} className="text-xs text-slate-400 border border-slate-800 hover:text-yellow-400 hover:border-yellow-400/50 px-3 py-1.5 rounded font-bold transition w-max block">+ Add Row</button>
         </div>
       ))}
+
+      {/* Add Column Modal */}
+      {showAddColModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-md space-y-4 shadow-2xl">
+            <h3 className="text-lg font-bold text-white">Add New Championship Column</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1">Brand</label>
+                <select
+                  value={newColBrand}
+                  onChange={(e) => setNewColBrand(e.target.value as any)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-sm text-white outline-none"
+                >
+                  <option value="RAW">RAW</option>
+                  <option value="SmackDown">SmackDown</option>
+                  <option value="NXT">NXT</option>
+                  <option value="Joint">Joint / Tag</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1">Title Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. World Heavyweight Title"
+                  value={newColTitle}
+                  onChange={(e) => setNewColTitle(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-sm text-white outline-none"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setShowAddColModal(false)}
+                className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white rounded transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddColumn}
+                className="px-4 py-2 text-xs font-bold bg-yellow-500 hover:bg-yellow-400 text-slate-950 rounded shadow transition"
+              >
+                Add Column
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

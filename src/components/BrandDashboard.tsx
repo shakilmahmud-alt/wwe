@@ -48,17 +48,56 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
   const [newSuperstarName, setNewSuperstarName] = useState('');
   const [selectedTier, setSelectedTier] = useState<TierType>('Top');
 
-  // Champion creation states
+  // Champion creation & editing states
   const [isCreatingChampion, setIsCreatingChampion] = useState(false);
+  const [editingChampId, setEditingChampId] = useState<string | null>(null);
   const [champTitleName, setChampTitleName] = useState('');
   const [champCurrentWinner, setChampCurrentWinner] = useState('');
   const [champPrevWinner, setChampPrevWinner] = useState('');
-  const [sinceYear, setSinceYear] = useState(1);
-  const [sinceMonth, setSinceMonth] = useState('May');
-  const [sinceWeek, setSinceWeek] = useState(UNIVERSE_WEEKS[0]);
-  const [champDefenses, setChampDefenses] = useState(0);
+  const [champAcquiredDate, setChampAcquiredDate] = useState('');
+  const [champDaysHeld, setChampDaysHeld] = useState<number>(0);
+  const [champDefenses, setChampDefenses] = useState<number>(0);
 
-  const autoCalculatedDays = calculateDaysBetween(sinceYear, sinceMonth, sinceWeek);
+  const handleStartEditChampion = (c: ChampionEntry) => {
+    setEditingChampId(c.id);
+    setChampTitleName(c.titleName);
+    setChampCurrentWinner(c.currentChampion);
+    setChampPrevWinner(c.previousChampion || '');
+    setChampAcquiredDate(c.acquiredDate || '');
+    setChampDaysHeld(c.daysHeld || 0);
+    setChampDefenses(c.defenses || 0);
+    setIsCreatingChampion(true);
+  };
+
+  const handleSaveChampionSubmit = () => {
+    if (!champTitleName.trim() || !champCurrentWinner.trim()) return;
+
+    const entry: ChampionEntry = {
+      id: editingChampId || `ch-${Date.now()}`,
+      titleName: champTitleName.trim(),
+      brand: brand === 'Women Tag' || brand === 'Free Agent' ? 'Joint' : (brand as any),
+      currentChampion: champCurrentWinner.trim(),
+      daysHeld: Number(champDaysHeld) || 0,
+      defenses: Number(champDefenses) || 0,
+      previousChampion: champPrevWinner.trim() || undefined,
+      acquiredDate: champAcquiredDate.trim() || undefined
+    };
+
+    if (editingChampId && onUpdateChampion) {
+      onUpdateChampion(entry);
+    } else if (onAddChampion) {
+      onAddChampion(entry);
+    }
+
+    setIsCreatingChampion(false);
+    setEditingChampId(null);
+    setChampTitleName('');
+    setChampCurrentWinner('');
+    setChampPrevWinner('');
+    setChampAcquiredDate('');
+    setChampDaysHeld(0);
+    setChampDefenses(0);
+  };
 
   // Episode plan creation state
   const [isCreatingShow, setIsCreatingShow] = useState(false);
@@ -308,15 +347,15 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
                 <Crown className="w-4 h-4 text-amber-400" />
                 {brand} Active Champions
               </h3>
-              {!isCreatingChampion && onAddChampion && (
+              {!isCreatingChampion && (onAddChampion || onUpdateChampion) && (
                 <button
                   onClick={() => {
+                    setEditingChampId(null);
                     setChampTitleName(`${brand} Championship`);
                     setChampCurrentWinner(brandSuperstars[0]?.name || '');
                     setChampPrevWinner('');
-                    setSinceYear(1);
-                    setSinceMonth('May');
-                    setSinceWeek(UNIVERSE_WEEKS[0]);
+                    setChampAcquiredDate('');
+                    setChampDaysHeld(0);
                     setChampDefenses(0);
                     setIsCreatingChampion(true);
                   }}
@@ -331,8 +370,10 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
             {isCreatingChampion && (
               <div className="p-3 bg-slate-950 rounded-lg border border-amber-500/40 space-y-3 text-xs mb-4">
                 <div className="flex justify-between items-center pb-2 border-b border-slate-800">
-                  <span className="font-bold text-amber-400">Assign {brand} Championship</span>
-                  <button onClick={() => setIsCreatingChampion(false)} className="text-slate-400 hover:text-white">
+                  <span className="font-bold text-amber-400">
+                    {editingChampId ? 'Edit Champion Record' : `Assign ${brand} Championship`}
+                  </span>
+                  <button onClick={() => { setIsCreatingChampion(false); setEditingChampId(null); }} className="text-slate-400 hover:text-white">
                     <X className="w-4 h-4" />
                   </button>
                 </div>
@@ -350,26 +391,13 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
                       <label className="block text-[10px] text-slate-400 mb-1">Current Champion</label>
-                      {brandSuperstars.length > 0 ? (
-                        <select
-                          value={champCurrentWinner}
-                          onChange={(e) => setChampCurrentWinner(e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white focus:border-amber-500 outline-none"
-                        >
-                          <option value="">Select Superstar...</option>
-                          {brandSuperstars.map((s) => (
-                            <option key={s.id} value={s.name}>{s.name}</option>
-                          ))}
-                        </select>
-                      ) : (
-                        <input
-                          type="text"
-                          value={champCurrentWinner}
-                          onChange={(e) => setChampCurrentWinner(e.target.value)}
-                          placeholder="Superstar Name..."
-                          className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white focus:border-amber-500 outline-none"
-                        />
-                      )}
+                      <input
+                        type="text"
+                        value={champCurrentWinner}
+                        onChange={(e) => setChampCurrentWinner(e.target.value)}
+                        placeholder="Superstar Name..."
+                        className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white focus:border-amber-500 outline-none"
+                      />
                     </div>
                     <div>
                       <label className="block text-[10px] text-slate-400 mb-1">Previous Champion (Optional)</label>
@@ -382,47 +410,26 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
                       />
                     </div>
                   </div>
-                  <div className="p-2 bg-slate-900 border border-amber-500/30 rounded space-y-1.5">
-                    <label className="block text-[10px] font-bold text-amber-400 flex justify-between items-center">
-                      <span>Won Since (Universe Date)</span>
-                      <span className="text-[9px] text-slate-400 font-normal">Now: Yr 2, May, W3</span>
-                    </label>
-                    <div className="grid grid-cols-3 gap-1">
-                      <select
-                        value={sinceYear}
-                        onChange={(e) => setSinceYear(Number(e.target.value))}
-                        className="bg-slate-950 border border-slate-700 rounded p-1 text-white text-[10px]"
-                      >
-                        <option value={1}>Year 1</option>
-                        <option value={2}>Year 2</option>
-                      </select>
-                      <select
-                        value={sinceMonth}
-                        onChange={(e) => setSinceMonth(e.target.value)}
-                        className="bg-slate-950 border border-slate-700 rounded p-1 text-white text-[10px]"
-                      >
-                        {UNIVERSE_MONTH_ORDER.map((m) => (
-                          <option key={m} value={m}>{m}</option>
-                        ))}
-                      </select>
-                      <select
-                        value={sinceWeek}
-                        onChange={(e) => setSinceWeek(e.target.value)}
-                        className="bg-slate-950 border border-slate-700 rounded p-1 text-white text-[10px]"
-                      >
-                        {UNIVERSE_WEEKS.map((w) => (
-                          <option key={w} value={w}>{w}</option>
-                        ))}
-                      </select>
-                    </div>
+                  <div>
+                    <label className="block text-[10px] text-slate-400 mb-1">Acquired / Won Date (e.g. Year 1 May W1)</label>
+                    <input
+                      type="text"
+                      value={champAcquiredDate}
+                      onChange={(e) => setChampAcquiredDate(e.target.value)}
+                      placeholder="e.g. Y1, May, Week 1"
+                      className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white focus:border-amber-500 outline-none"
+                    />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[10px] text-slate-400 mb-1">Days Held (Auto)</label>
-                      <div className="w-full bg-slate-950/80 border border-amber-500/50 rounded px-2.5 py-1.5 text-amber-300 font-bold flex items-center justify-between text-xs">
-                        <span>{autoCalculatedDays} Days</span>
-                        <span className="text-[9px] bg-emerald-950 text-emerald-400 border border-emerald-800 px-1 py-0.5 rounded font-semibold">AUTO</span>
-                      </div>
+                      <label className="block text-[10px] text-slate-400 mb-1">Days Held (Manual)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={champDaysHeld}
+                        onChange={(e) => setChampDaysHeld(parseInt(e.target.value) || 0)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white focus:border-amber-500 outline-none font-bold text-amber-400"
+                      />
                     </div>
                     <div>
                       <label className="block text-[10px] text-slate-400 mb-1">Successful Defenses</label>
@@ -436,28 +443,12 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
                     </div>
                   </div>
                   <button
-                    onClick={() => {
-                      if (!champTitleName.trim() || !champCurrentWinner.trim()) return;
-                      onAddChampion?.({
-                        id: `ch-${Date.now()}`,
-                        titleName: champTitleName.trim(),
-                        brand: brand === 'Women Tag' || brand === 'Free Agent' ? 'Joint' : brand as any,
-                        currentChampion: champCurrentWinner.trim(),
-                        daysHeld: autoCalculatedDays,
-                        defenses: champDefenses,
-                        previousChampion: champPrevWinner.trim() || undefined,
-                        acquiredDate: formatAcquiredDate(sinceYear, sinceMonth, sinceWeek)
-                      });
-                      setIsCreatingChampion(false);
-                      setChampTitleName('');
-                      setChampCurrentWinner('');
-                      setChampPrevWinner('');
-                    }}
+                    onClick={handleSaveChampionSubmit}
                     disabled={!champTitleName.trim() || !champCurrentWinner.trim()}
                     className="w-full py-1.5 font-bold rounded bg-amber-500 hover:bg-amber-400 text-slate-950 transition disabled:opacity-50 mt-2 flex items-center justify-center gap-1.5"
                   >
                     <Check className="w-3.5 h-3.5" />
-                    Save & Assign Champion
+                    {editingChampId ? 'Update Champion' : 'Save & Assign Champion'}
                   </button>
                 </div>
               </div>
@@ -473,26 +464,35 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
                       <span className="text-[10px] font-bold uppercase text-amber-500 block">{c.titleName}</span>
                       <span className="font-extrabold text-white text-sm">{c.currentChampion}</span>
                       {c.acquiredDate && (
-                        <span className="text-[10px] text-purple-300 font-semibold block">Won: {getDisplayAcquiredDate(c.acquiredDate)}</span>
+                        <span className="text-[10px] text-purple-300 font-semibold block">Won: {c.acquiredDate}</span>
                       )}
                       {c.previousChampion && (
                         <span className="text-[10px] text-slate-400 block">Prev: {c.previousChampion}</span>
                       )}
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       <div className="text-right text-[10px] text-slate-400">
-                        <div>{c.daysHeld} Days Reign</div>
+                        <div className="font-bold text-amber-300">{c.daysHeld} Days Reign</div>
                         <div className="text-emerald-400 font-semibold">{c.defenses} Defenses</div>
                       </div>
-                      {onDeleteChampion && (
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition ml-2">
                         <button
-                          onClick={() => onDeleteChampion(c.id)}
-                          className="p-1 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition rounded hover:bg-slate-900"
-                          title="Remove Championship record"
+                          onClick={() => handleStartEditChampion(c)}
+                          className="p-1 text-slate-400 hover:text-amber-400 transition rounded hover:bg-slate-900"
+                          title="Edit Championship record"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Edit2 className="w-3.5 h-3.5" />
                         </button>
-                      )}
+                        {onDeleteChampion && (
+                          <button
+                            onClick={() => onDeleteChampion(c.id)}
+                            className="p-1 text-slate-400 hover:text-red-400 transition rounded hover:bg-slate-900"
+                            title="Remove Championship record"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}

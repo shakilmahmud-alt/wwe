@@ -559,6 +559,13 @@ export default function App() {
     }));
   };
 
+  const handleUpdateMatrixColumns = (newColumns: any[]) => {
+    setAppState((prev) => ({
+      ...prev,
+      matrixColumns: newColumns
+    }));
+  };
+
   const handleUpdateTime = (time: any) => {
     setAppState((prev) => ({
       ...prev,
@@ -651,7 +658,7 @@ export default function App() {
           <BrandDashboard
             brand="RAW"
             superstars={appState.superstars}
-            champions={calculatedChampions}
+            champions={appState.champions}
             rivalries={appState.rivalries}
             showPlans={appState.rawShowPlans}
             onAddSuperstar={handleAddSuperstar}
@@ -672,7 +679,7 @@ export default function App() {
           <BrandDashboard
             brand="SmackDown"
             superstars={appState.superstars}
-            champions={calculatedChampions}
+            champions={appState.champions}
             rivalries={appState.rivalries}
             showPlans={appState.sdShowPlans}
             onAddSuperstar={handleAddSuperstar}
@@ -693,7 +700,7 @@ export default function App() {
           <BrandDashboard
             brand="NXT"
             superstars={appState.superstars}
-            champions={calculatedChampions}
+            champions={appState.champions}
             rivalries={appState.rivalries}
             showPlans={appState.nxtShowPlans}
             onAddSuperstar={handleAddSuperstar}
@@ -741,12 +748,13 @@ export default function App() {
 
         {currentTab === 'summary' && (
           <SummaryView
-            appState={{ ...appState, champions: calculatedChampions }}
+            appState={appState}
             onLoadSampleData={handleLoadSampleData}
             onClearAllData={handleClearAllData}
             onExportJSON={handleExportJSON}
             onImportJSON={handleImportJSON}
             onUpdateMatrix={handleUpdateMatrix}
+            onUpdateMatrixColumns={handleUpdateMatrixColumns}
             onUpdateTime={handleUpdateTime}
             onAddCalendarEvent={handleAddCalendarEvent}
             onUpdateCalendarEvent={handleUpdateCalendarEvent}

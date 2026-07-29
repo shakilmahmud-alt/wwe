@@ -94,8 +94,8 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
 
     {
       id: 'summary',
-      label: 'Summary',
-      icon: <PieChart className="w-4 h-4 text-cyan-400" />,
+      label: 'Calendar',
+      icon: <Calendar className="w-4 h-4 text-cyan-400" />,
       colorClass: 'hover:text-cyan-400'
     }
   ];
