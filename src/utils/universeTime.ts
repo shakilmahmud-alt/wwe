@@ -92,12 +92,12 @@ export const parseAcquiredDate = (acquiredDate?: string): ParsedUniverseDate => 
   const year = parseInt(yearStr) || 1;
   const month = UNIVERSE_MONTH_ORDER.includes(parts[1]) ? parts[1] : 'May';
   let week = parts[2] || UNIVERSE_WEEKS[0];
-  if (week === 'Week 1' || week.includes('Day 1')) week = UNIVERSE_WEEKS[0];
-  else if (week === 'Week 2' || week.includes('Day 7')) week = UNIVERSE_WEEKS[1];
-  else if (week === 'Week 3' || week.includes('Day 14')) week = UNIVERSE_WEEKS[2];
+  if (week === 'Week 3' || week.includes('Day 14')) week = UNIVERSE_WEEKS[2];
   else if (week === 'Week 4' || week.includes('Day 21')) week = UNIVERSE_WEEKS[3];
   else if (week === 'Week 5' || week.includes('Day 28')) week = UNIVERSE_WEEKS[4];
-  else if (week.includes('Month End') || week.includes('Day 30')) week = UNIVERSE_WEEKS[5];
+  else if (week.includes('Month End') || week.includes('Day 30') || week.includes('Day 31')) week = UNIVERSE_WEEKS[5];
+  else if (week === 'Week 2' || week.includes('Day 7')) week = UNIVERSE_WEEKS[1];
+  else if (week === 'Week 1' || week.includes('Day 1')) week = UNIVERSE_WEEKS[0];
   else if (!UNIVERSE_WEEKS.includes(week)) week = UNIVERSE_WEEKS[0];
   return { year, month, week };
 };
@@ -109,12 +109,12 @@ export const formatAcquiredDate = (year: number, month: string, week: string): s
 export const getDisplayAcquiredDate = (acquiredDate?: string): string => {
   const { year, month, week } = parseAcquiredDate(acquiredDate);
   let shortWeek = 'Day 1';
-  if (week.includes('Day 1')) shortWeek = 'Day 1';
-  else if (week.includes('Day 7')) shortWeek = 'Day 7 (PLE)';
-  else if (week.includes('Day 14')) shortWeek = 'Day 14 (PLE)';
+  if (week.includes('Day 14')) shortWeek = 'Day 14 (PLE)';
   else if (week.includes('Day 21')) shortWeek = 'Day 21 (PLE)';
   else if (week.includes('Day 28')) shortWeek = 'Day 28 (PLE)';
-  else if (week.includes('Month End') || week.includes('Day 30')) shortWeek = 'Month End';
+  else if (week.includes('Month End') || week.includes('Day 30') || week.includes('Day 31')) shortWeek = 'Month End';
+  else if (week.includes('Day 7')) shortWeek = 'Day 7 (PLE)';
+  else if (week.includes('Day 1')) shortWeek = 'Day 1';
   return `Yr ${year} • ${month} (${shortWeek})`;
 };
 
@@ -161,7 +161,7 @@ export const calculateChampionsReign = (
     let week = UNIVERSE_WEEKS[1]; // default to Day 7
     const pleName = row.mainPle || row.nxtPle || '';
     if (pleName) {
-      const event = calendarEvents.find(e => e.eventName === pleName && e.month === row.month);
+      const event = calendarEvents.find(e => e.eventName.trim().toLowerCase() === pleName.trim().toLowerCase() && e.month === row.month);
       if (event && event.date) {
         week = event.date;
       }

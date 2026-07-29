@@ -202,8 +202,14 @@ export async function loadFromSupabase(): Promise<{ success: boolean; data?: App
       .single();
 
     let state: AppState | null = mainRow && mainRow.data ? (mainRow.data as AppState) : null;
+    
+    // If we successfully loaded the full JSON state, return it immediately!
+    // This prevents the incomplete relational tables from overwriting rich data like 'royalRumble' and 'mitb' checkboxes.
+    if (state) {
+      return { success: true, data: state };
+    }
 
-    // 2. Also check if 'superstars' relational table has rows
+    // 2. Also check if 'superstars' relational table has rows (Fallback if JSON fails)
     const { data: superstarsRows } = await supabase.from('superstars').select('*');
     if (superstarsRows && superstarsRows.length > 0) {
       const mappedSuperstars: Superstar[] = superstarsRows.map((row: any) => ({

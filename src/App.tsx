@@ -530,6 +530,13 @@ export default function App() {
     });
   };
 
+  const handleDeleteArchiveEntry = (id: string) => {
+    setAppState((prev) => ({
+      ...prev,
+      championArchive: (prev.championArchive || []).filter((a) => a.id !== id)
+    }));
+  };
+
   // Handlers for Rivalries
   const handleAddRivalry = (entry: RivalryEntry) => {
     setAppState((prev) => ({
@@ -728,6 +735,7 @@ export default function App() {
           <ChampListView
             archive={appState.championArchive || []}
             onUpdateArchiveEntry={handleUpdateArchiveEntry}
+            onDeleteArchiveEntry={handleDeleteArchiveEntry}
           />
         )}
 
