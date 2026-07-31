@@ -187,6 +187,31 @@ export interface UniverseTime {
   week: string;
 }
 
+export interface CustomMatrix {
+  id: string;
+  title: string;
+  data: HistoryMatrixRow[];
+}
+
+export interface PPVTimelineRow {
+  id: string;
+  rawSdEvent: string;
+  rawSdMonth: string;
+  rawSdDay: string;
+  rawSdDaysCount: string;
+  nxtEvent: string;
+  nxtMonth: string;
+  nxtDay: string;
+  nxtDaysCount: string;
+  colorPreset?: string;
+}
+
+export interface PPVTimeline {
+  id: string;
+  title: string;
+  rows: PPVTimelineRow[];
+}
+
 export interface AppState {
   superstars: Superstar[];
   womenTagTeams: WomenTagTeam[];
@@ -202,5 +227,7 @@ export interface AppState {
   historyMatrix?: HistoryMatrixRow[];
   matrixColumns?: MatrixColumn[];
   emptyMatrix?: HistoryMatrixRow[];
+  customMatrices?: CustomMatrix[];
+  ppvTimelines?: PPVTimeline[];
   universeTime?: UniverseTime;
 }

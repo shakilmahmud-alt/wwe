@@ -552,10 +552,87 @@ export default function App() {
     }));
   };
 
-  const handleUpdateMatrix = (key: 'historyMatrix' | 'emptyMatrix', newMatrix: any[]) => {
+  const handleUpdateMatrix = (key: string, newMatrix: any[]) => {
+    setAppState((prev) => {
+      if (key === 'historyMatrix' || key === 'emptyMatrix') {
+        return { ...prev, [key]: newMatrix };
+      }
+      if (prev.customMatrices) {
+        return {
+          ...prev,
+          customMatrices: prev.customMatrices.map(cm => cm.id === key ? { ...cm, data: newMatrix } : cm)
+        };
+      }
+      return prev;
+    });
+  };
+
+  const handleAddCustomMatrix = (title: string) => {
+    setAppState((prev) => {
+      const template = prev.emptyMatrix && prev.emptyMatrix.length > 0 
+        ? prev.emptyMatrix 
+        : sampleFullData.emptyMatrix || [];
+        
+      const newCustom = {
+        id: 'matrix-' + Date.now(),
+        title,
+        data: template.map((row: any) => ({ ...row, id: 'row-' + Date.now() + Math.random().toString(), champions: {} }))
+      };
+      
+      return {
+        ...prev,
+        customMatrices: [...(prev.customMatrices || []), newCustom]
+      };
+    });
+  };
+
+  const handleDeleteCustomMatrix = (id: string) => {
     setAppState((prev) => ({
       ...prev,
-      [key]: newMatrix
+      customMatrices: (prev.customMatrices || []).filter(cm => cm.id !== id)
+    }));
+  };
+
+  const handleAddPPVTimeline = (title?: string) => {
+    setAppState((prev) => {
+      const createBlankRows = () => 
+        Array.from({ length: 15 }, (_, i) => ({
+          id: `ppv-row-${Date.now()}-${i}`,
+          rawSdEvent: '',
+          rawSdMonth: '',
+          rawSdDay: '',
+          rawSdDaysCount: '',
+          nxtEvent: '',
+          nxtMonth: '',
+          nxtDay: '',
+          nxtDaysCount: '',
+          colorPreset: 'default'
+        }));
+
+      const newTimeline = {
+        id: 'ppv-tl-' + Date.now(),
+        title: title || `PPV Schedule Timeline #${(prev.ppvTimelines?.length || 0) + 1}`,
+        rows: createBlankRows()
+      };
+
+      return {
+        ...prev,
+        ppvTimelines: [...(prev.ppvTimelines || []), newTimeline]
+      };
+    });
+  };
+
+  const handleUpdatePPVTimeline = (timelineId: string, newRows: any[]) => {
+    setAppState((prev) => ({
+      ...prev,
+      ppvTimelines: (prev.ppvTimelines || []).map((tl) => (tl.id === timelineId ? { ...tl, rows: newRows } : tl))
+    }));
+  };
+
+  const handleDeletePPVTimeline = (timelineId: string) => {
+    setAppState((prev) => ({
+      ...prev,
+      ppvTimelines: (prev.ppvTimelines || []).filter((tl) => tl.id !== timelineId)
     }));
   };
 
@@ -760,6 +837,11 @@ export default function App() {
             onUpdateCalendarEvent={handleUpdateCalendarEvent}
             onToggleCalendarComplete={handleToggleCalendarComplete}
             onDeleteCalendarEvent={handleDeleteCalendarEvent}
+            onAddCustomMatrix={handleAddCustomMatrix}
+            onDeleteCustomMatrix={handleDeleteCustomMatrix}
+            onAddPPVTimeline={handleAddPPVTimeline}
+            onUpdatePPVTimeline={handleUpdatePPVTimeline}
+            onDeletePPVTimeline={handleDeletePPVTimeline}
           />
         )}
 
