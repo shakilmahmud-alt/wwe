@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Superstar, BrandType, TierType, ChampionEntry, RivalryEntry, ShowPlan, MatchCardItem, UniverseTime } from '../types';
-import { Plus, Trash2, Edit2, Flame, Zap, Tv, Crown, Swords, Calendar, UserPlus, Check, X } from 'lucide-react';
+import { Plus, Trash2, Edit2, Flame, Zap, Tv, Crown, Swords, Calendar, UserPlus, Check, X, GripVertical } from 'lucide-react';
 import { calculateDaysBetween, formatAcquiredDate, getDisplayAcquiredDate, UNIVERSE_MONTH_ORDER, UNIVERSE_WEEKS } from '../utils/universeTime';
 
 interface BrandDashboardProps {
@@ -18,9 +18,33 @@ interface BrandDashboardProps {
   onAddChampion?: (entry: ChampionEntry) => void;
   onUpdateChampion?: (entry: ChampionEntry) => void;
   onDeleteChampion?: (id: string) => void;
+  onReorderChampions?: (reorderedChampions: ChampionEntry[]) => void;
   universeTime: UniverseTime;
   onUpdateTime: (time: UniverseTime) => void;
 }
+
+// Helper to normalize image paths (handles public/, backslashes, missing leading slashes, URL encoding)
+const formatImageUrl = (url: string | undefined, fallbackName?: string): string => {
+  if (url && url.trim()) {
+    let cleaned = url.trim().replace(/\\/g, '/');
+    if (cleaned.toLowerCase().startsWith('public/')) {
+      cleaned = cleaned.substring(7);
+    }
+    if (!cleaned.startsWith('/') && !cleaned.startsWith('http://') && !cleaned.startsWith('https://') && !cleaned.startsWith('data:')) {
+      cleaned = '/' + cleaned;
+    }
+    if (!cleaned.startsWith('http://') && !cleaned.startsWith('https://') && !cleaned.startsWith('data:')) {
+      cleaned = cleaned.split('/').map(part => encodeURIComponent(part)).join('/');
+      if (!cleaned.startsWith('/')) cleaned = '/' + cleaned;
+    }
+    return cleaned;
+  }
+  if (fallbackName && fallbackName.trim()) {
+    const encoded = encodeURIComponent(fallbackName.trim());
+    return `/${encoded}.png`;
+  }
+  return '';
+};
 
 export const BrandDashboard: React.FC<BrandDashboardProps> = ({
   brand,
@@ -37,6 +61,7 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
   onAddChampion,
   onUpdateChampion,
   onDeleteChampion,
+  onReorderChampions,
   universeTime,
   onUpdateTime
 }) => {
@@ -48,6 +73,56 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
   const [newSuperstarName, setNewSuperstarName] = useState('');
   const [selectedTier, setSelectedTier] = useState<TierType>('Top');
 
+  // Drag and drop reordering for active champions
+  const [draggedChampId, setDraggedChampId] = useState<string | null>(null);
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.setData('text/plain', id);
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedChampId(id);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    const sourceId = draggedChampId || e.dataTransfer.getData('text/plain');
+    if (!sourceId || sourceId === targetId) {
+      setDraggedChampId(null);
+      return;
+    }
+
+    const currentBrandChamps = champions.filter((c) => c.brand === brand || c.brand === 'Joint');
+    const sourceIndex = currentBrandChamps.findIndex((c) => c.id === sourceId);
+    const targetIndex = currentBrandChamps.findIndex((c) => c.id === targetId);
+
+    if (sourceIndex < 0 || targetIndex < 0) {
+      setDraggedChampId(null);
+      return;
+    }
+
+    const reorderedBrandChamps = [...currentBrandChamps];
+    const [movedItem] = reorderedBrandChamps.splice(sourceIndex, 1);
+    reorderedBrandChamps.splice(targetIndex, 0, movedItem);
+
+    // Merge reordered brand champions back into overall champions array
+    let brandIdx = 0;
+    const newAllChampions = champions.map((c) => {
+      if (c.brand === brand || c.brand === 'Joint') {
+        return reorderedBrandChamps[brandIdx++];
+      }
+      return c;
+    });
+
+    if (onReorderChampions) {
+      onReorderChampions(newAllChampions);
+    }
+    setDraggedChampId(null);
+  };
+
   // Champion creation & editing states
   const [isCreatingChampion, setIsCreatingChampion] = useState(false);
   const [editingChampId, setEditingChampId] = useState<string | null>(null);
@@ -57,6 +132,8 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
   const [champAcquiredDate, setChampAcquiredDate] = useState('');
   const [champDaysHeld, setChampDaysHeld] = useState<number>(0);
   const [champDefenses, setChampDefenses] = useState<number>(0);
+  const [champBeltImage, setChampBeltImage] = useState('');
+  const [champWrestlerImage, setChampWrestlerImage] = useState('');
 
   const handleStartEditChampion = (c: ChampionEntry) => {
     setEditingChampId(c.id);
@@ -66,6 +143,8 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
     setChampAcquiredDate(c.acquiredDate || '');
     setChampDaysHeld(c.daysHeld || 0);
     setChampDefenses(c.defenses || 0);
+    setChampBeltImage(c.beltImage || '');
+    setChampWrestlerImage(c.wrestlerImage || '');
     setIsCreatingChampion(true);
   };
 
@@ -80,7 +159,9 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
       daysHeld: Number(champDaysHeld) || 0,
       defenses: Number(champDefenses) || 0,
       previousChampion: champPrevWinner.trim() || undefined,
-      acquiredDate: champAcquiredDate.trim() || undefined
+      acquiredDate: champAcquiredDate.trim() || undefined,
+      beltImage: formatImageUrl(champBeltImage),
+      wrestlerImage: formatImageUrl(champWrestlerImage)
     };
 
     if (editingChampId && onUpdateChampion) {
@@ -97,6 +178,8 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
     setChampAcquiredDate('');
     setChampDaysHeld(0);
     setChampDefenses(0);
+    setChampBeltImage('');
+    setChampWrestlerImage('');
   };
 
   // Episode plan creation state
@@ -246,259 +329,337 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
         </div>
       </div>
 
-      {/* Grid Layout: Roster & Show Planner */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 2 Cols: Brand Superstars by Tier */}
-        <div className="lg:col-span-2 space-y-4">
-          {/* Add Superstar Card */}
-          <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl shadow-lg">
-            <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2 mb-3">
-              <UserPlus className="w-4 h-4 text-emerald-400" />
-              Add New Superstar to {brand}
-            </h3>
-            <form onSubmit={handleAddSuperstarSubmit} className="flex flex-wrap items-center gap-2">
-              <input
-                type="text"
-                placeholder="Superstar or Team Name..."
-                value={newSuperstarName}
-                onChange={(e) => setNewSuperstarName(e.target.value)}
-                className="flex-1 min-w-[200px] px-3 py-2 text-xs bg-slate-950 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-red-500"
-              />
-              <select
-                value={selectedTier}
-                onChange={(e) => setSelectedTier(e.target.value as TierType)}
-                className="px-3 py-2 text-xs bg-slate-950 border border-slate-700 rounded-lg text-white"
-              >
-                <option value="Top">Top (Main Event)</option>
-                <option value="Middle">Middle (Midcard)</option>
-                <option value="Low">Low (Lower Card)</option>
-                <option value="Female">Female Division</option>
-                <option value="Tag Team">Tag Team</option>
-              </select>
-              <button
-                type="submit"
-                className={`px-4 py-2 text-xs font-bold rounded-lg transition shadow-md ${theme.accentBtn}`}
-              >
-                Add Superstar
+      {/* 1. Full-Width Add New Superstar Card */}
+      <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl shadow-lg w-full">
+        <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2 mb-3">
+          <UserPlus className="w-4 h-4 text-emerald-400" />
+          Add New Superstar to {brand}
+        </h3>
+        <form onSubmit={handleAddSuperstarSubmit} className="flex flex-wrap items-center gap-2">
+          <input
+            type="text"
+            placeholder="Superstar or Team Name..."
+            value={newSuperstarName}
+            onChange={(e) => setNewSuperstarName(e.target.value)}
+            className="flex-1 min-w-[240px] px-3 py-2 text-xs bg-slate-950 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-red-500"
+          />
+          <select
+            value={selectedTier}
+            onChange={(e) => setSelectedTier(e.target.value as TierType)}
+            className="px-3 py-2 text-xs bg-slate-950 border border-slate-700 rounded-lg text-white"
+          >
+            <option value="Top">Top (Main Event)</option>
+            <option value="Middle">Middle (Midcard)</option>
+            <option value="Low">Low (Lower Card)</option>
+            <option value="Female">Female Division</option>
+            <option value="Tag Team">Tag Team</option>
+          </select>
+          <button
+            type="submit"
+            className={`px-5 py-2 text-xs font-bold rounded-lg transition shadow-md ${theme.accentBtn}`}
+          >
+            Add Superstar
+          </button>
+        </form>
+      </div>
+
+      {/* 2. Active Champions Section (6 Portrait Cards Grid) */}
+      <div className="p-5 bg-slate-900 border border-slate-800 rounded-xl shadow-lg space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h3 className="text-base font-black text-amber-400 uppercase tracking-wider flex items-center gap-2">
+            <Crown className="w-5 h-5 text-amber-400" />
+            {brand} Active Champions
+            <span className="text-[10px] normal-case font-normal text-slate-400 flex items-center gap-1 bg-slate-950 px-2 py-0.5 rounded border border-slate-800 ml-2">
+              <GripVertical className="w-3 h-3 text-amber-400" /> Drag cards to reorder
+            </span>
+          </h3>
+          {!isCreatingChampion && (onAddChampion || onUpdateChampion) && (
+            <button
+              onClick={() => {
+                setEditingChampId(null);
+                setChampTitleName(`${brand} Championship`);
+                setChampCurrentWinner(brandSuperstars[0]?.name || '');
+                setChampPrevWinner('');
+                setChampAcquiredDate('');
+                setChampDaysHeld(0);
+                setChampDefenses(0);
+                setChampBeltImage('');
+                setChampWrestlerImage('');
+                setIsCreatingChampion(true);
+              }}
+              className="px-3 py-1.5 text-xs font-bold rounded-md bg-amber-500 hover:bg-amber-400 text-slate-950 transition flex items-center gap-1 shadow"
+            >
+              <Plus className="w-4 h-4" />
+              Add Champion
+            </button>
+          )}
+        </div>
+
+        {isCreatingChampion && (
+          <div className="p-4 bg-slate-950 rounded-xl border border-amber-500/50 space-y-3 text-xs shadow-xl">
+            <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+              <span className="font-bold text-amber-400 text-sm">
+                {editingChampId ? 'Edit Champion Record' : `Assign ${brand} Championship`}
+              </span>
+              <button onClick={() => { setIsCreatingChampion(false); setEditingChampId(null); }} className="text-slate-400 hover:text-white">
+                <X className="w-4 h-4" />
               </button>
-            </form>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[10px] text-slate-400 mb-1 font-semibold uppercase">Title Name</label>
+                <input
+                  type="text"
+                  value={champTitleName}
+                  onChange={(e) => setChampTitleName(e.target.value)}
+                  placeholder={`e.g. Undisputed ${brand} Championship`}
+                  className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white focus:border-amber-500 outline-none"
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] text-slate-400 mb-1 font-semibold uppercase">Current Champion</label>
+                  <input
+                    type="text"
+                    value={champCurrentWinner}
+                    onChange={(e) => setChampCurrentWinner(e.target.value)}
+                    placeholder="Superstar Name..."
+                    className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white focus:border-amber-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 mb-1 font-semibold uppercase">Previous Champion (Optional)</label>
+                  <input
+                    type="text"
+                    value={champPrevWinner}
+                    onChange={(e) => setChampPrevWinner(e.target.value)}
+                    placeholder="Previous Holder..."
+                    className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white focus:border-amber-500 outline-none"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-400 mb-1 font-semibold uppercase">Acquired / Won Date (e.g. Year 1 May W1)</label>
+                <input
+                  type="text"
+                  value={champAcquiredDate}
+                  onChange={(e) => setChampAcquiredDate(e.target.value)}
+                  placeholder="e.g. Y1, May, Week 1"
+                  className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white focus:border-amber-500 outline-none"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] text-slate-400 mb-1 font-semibold uppercase">Days Held (Manual)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={champDaysHeld}
+                    onChange={(e) => setChampDaysHeld(parseInt(e.target.value) || 0)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white focus:border-amber-500 outline-none font-bold text-amber-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 mb-1 font-semibold uppercase">Successful Defenses</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={champDefenses}
+                    onChange={(e) => setChampDefenses(parseInt(e.target.value) || 0)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white focus:border-amber-500 outline-none"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] text-amber-300 mb-1 font-bold uppercase">
+                  Superstar Image Path / URL
+                </label>
+                <input
+                  type="text"
+                  value={champWrestlerImage}
+                  onChange={(e) => setChampWrestlerImage(e.target.value)}
+                  placeholder="/bray_wyatt.png  or  /images/bray_wyatt.png  or  https://..."
+                  className="w-full bg-slate-900 border border-amber-500/60 rounded px-2.5 py-1.5 text-white focus:border-amber-400 outline-none font-mono text-xs"
+                />
+                <p className="text-[10px] text-slate-400 mt-1 italic">
+                  💡 Tip: Put image file in your <code className="text-amber-300 font-mono">public/</code> folder (e.g. <code className="text-amber-300 font-mono">public/bray_wyatt.png</code>) and type <code className="text-amber-300 font-mono">/bray_wyatt.png</code> here!
+                </p>
+              </div>
+              <button
+                onClick={handleSaveChampionSubmit}
+                disabled={!champTitleName.trim() || !champCurrentWinner.trim()}
+                className="w-full py-2 font-bold rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 transition disabled:opacity-50 mt-2 flex items-center justify-center gap-1.5 shadow-md uppercase tracking-wider"
+              >
+                <Check className="w-4 h-4" />
+                {editingChampId ? 'Update Champion' : 'Save & Assign Champion'}
+              </button>
+            </div>
           </div>
+        )}
 
-          {/* Roster Tiers Columns */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {tiersList.map((tier) => {
-              const tierWrestlers = brandSuperstars.filter((s) => s.tier === tier);
-              return (
-                <div key={tier} className="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-md flex flex-col">
-                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                      {tier} ({tierWrestlers.length})
+        {brandChampions.length === 0 && !isCreatingChampion ? (
+          <p className="text-xs text-slate-500 italic py-4">No champions logged for {brand} yet.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {brandChampions.map((c) => (
+              <div 
+                key={c.id} 
+                draggable
+                onDragStart={(e) => handleDragStart(e, c.id)}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, c.id)}
+                onDragEnd={() => setDraggedChampId(null)}
+                className={`relative overflow-hidden rounded-2xl border bg-slate-950 shadow-2xl flex flex-col justify-between group hover:border-amber-400 hover:shadow-amber-500/30 transition-all duration-300 min-h-[540px] h-[560px] cursor-grab active:cursor-grabbing ${
+                  draggedChampId === c.id ? 'opacity-40 border-amber-500 scale-95' : 'border-amber-500/40'
+                }`}
+              >
+                {/* Top Action Buttons (Edit / Delete / Drag Handle) Floating */}
+                <div className="absolute top-2.5 right-2.5 z-20 flex justify-end opacity-80 group-hover:opacity-100 transition">
+                  <div className="flex items-center gap-1 bg-slate-950/80 backdrop-blur-md p-1 rounded-lg border border-slate-700/80 shadow-lg">
+                    <span className="p-1 text-amber-400/80 cursor-grab hover:text-amber-400" title="Drag to reorder">
+                      <GripVertical className="w-3.5 h-3.5" />
                     </span>
-                    <span className="text-[10px] text-slate-500">{brand}</span>
-                  </div>
-
-                  <div className="space-y-1.5 flex-1 max-h-[300px] overflow-y-auto scrollbar-thin pr-1">
-                    {tierWrestlers.length === 0 ? (
-                      <p className="text-xs text-slate-500 italic py-4 text-center">No superstars in {tier}</p>
-                    ) : (
-                      tierWrestlers.map((w) => (
-                        <div
-                          key={w.id}
-                          className="flex items-center justify-between p-2 rounded bg-slate-950/80 border border-slate-800/80 hover:border-slate-700 transition group text-xs"
-                        >
-                          <span className="font-semibold text-slate-200">{w.name}</span>
-                          <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition">
-                            <select
-                              value={w.tier}
-                              onChange={(e) => onMoveSuperstar(w.id, brand, e.target.value as TierType)}
-                              className="text-[10px] bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-slate-300"
-                              title="Move tier"
-                            >
-                              <option value="Top">Top</option>
-                              <option value="Middle">Mid</option>
-                              <option value="Low">Low</option>
-                              <option value="Female">Fem</option>
-                              <option value="Tag Team">Tag</option>
-                            </select>
-                            <button
-                              onClick={() => onDeleteSuperstar(w.id)}
-                              className="p-1 text-slate-400 hover:text-red-400 transition"
-                              title="Delete Superstar"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          </div>
-                        </div>
-                      ))
+                    <button
+                      onClick={() => handleStartEditChampion(c)}
+                      className="p-1 text-slate-300 hover:text-amber-400 transition rounded hover:bg-slate-800"
+                      title="Edit Champion"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    {onDeleteChampion && (
+                      <button
+                        onClick={() => onDeleteChampion(c.id)}
+                        className="p-1 text-slate-300 hover:text-red-400 transition rounded hover:bg-slate-800"
+                        title="Remove Champion"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     )}
                   </div>
                 </div>
-              );
-            })}
+
+                {/* Superstar Image Section (Massive 390px Height & Crystal Clear) */}
+                <div className="relative w-full h-[390px] overflow-hidden bg-slate-900 flex-shrink-0">
+                  {(() => {
+                    const imgSrc = formatImageUrl(c.wrestlerImage, c.currentChampion);
+                    return imgSrc ? (
+                      <img
+                        src={imgSrc}
+                        alt={c.currentChampion}
+                        className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-b from-purple-950/80 via-slate-900 to-slate-950 flex items-center justify-center">
+                        <Crown className="w-28 h-28 text-amber-500/20" />
+                      </div>
+                    );
+                  })()}
+                  {/* Subtle bottom fade gradient into text area */}
+                  <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-slate-950 via-slate-950/70 to-transparent pointer-events-none" />
+                </div>
+
+                {/* Bottom Content Area */}
+                <div className="relative z-10 p-3 space-y-1 text-left bg-slate-950 flex-1 flex flex-col justify-between border-t border-slate-800/60">
+                  <div>
+                    {/* Belt Title Name (Big Bold) */}
+                    <span className="text-[11px] font-black uppercase text-amber-400 tracking-wider block drop-shadow-md line-clamp-1">
+                      {c.titleName}
+                    </span>
+
+                    {/* Player Name (Slightly Larger Font) */}
+                    <span className="font-extrabold text-white text-lg leading-tight block drop-shadow-lg tracking-tight mt-0.5">
+                      {c.currentChampion}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1">
+                    {/* Reign & Defenses */}
+                    <div className="pt-1.5 flex items-center justify-between text-xs font-bold border-t border-slate-800/80">
+                      <span className="text-amber-300 drop-shadow">{c.daysHeld} Days Reign</span>
+                      <span className="text-emerald-400 drop-shadow">{c.defenses} Defenses</span>
+                    </div>
+
+                    {/* Won Date */}
+                    {c.acquiredDate && (
+                      <span className="text-[10px] text-purple-300 font-semibold block truncate">
+                        Won: {c.acquiredDate}
+                      </span>
+                    )}
+
+                    {/* Previous Champion */}
+                    {c.previousChampion && (
+                      <span className="text-[10px] text-slate-400 block truncate">
+                        Prev: {c.previousChampion}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+        )}
+      </div>
 
-        {/* Right 1 Col: Match Card Builder & Champions */}
-        <div className="space-y-6">
-          {/* Champions Showcase Widget */}
-          <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl shadow-lg">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-amber-400 flex items-center gap-2">
-                <Crown className="w-4 h-4 text-amber-400" />
-                {brand} Active Champions
-              </h3>
-              {!isCreatingChampion && (onAddChampion || onUpdateChampion) && (
-                <button
-                  onClick={() => {
-                    setEditingChampId(null);
-                    setChampTitleName(`${brand} Championship`);
-                    setChampCurrentWinner(brandSuperstars[0]?.name || '');
-                    setChampPrevWinner('');
-                    setChampAcquiredDate('');
-                    setChampDaysHeld(0);
-                    setChampDefenses(0);
-                    setIsCreatingChampion(true);
-                  }}
-                  className="px-2.5 py-1 text-xs font-bold rounded-md bg-amber-500 hover:bg-amber-400 text-slate-950 transition flex items-center gap-1 shadow"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  Add Champion
-                </button>
-              )}
-            </div>
-
-            {isCreatingChampion && (
-              <div className="p-3 bg-slate-950 rounded-lg border border-amber-500/40 space-y-3 text-xs mb-4">
-                <div className="flex justify-between items-center pb-2 border-b border-slate-800">
-                  <span className="font-bold text-amber-400">
-                    {editingChampId ? 'Edit Champion Record' : `Assign ${brand} Championship`}
+      {/* 3. Roster Divisions Side by Side (5 Columns Grid) */}
+      <div className="p-5 bg-slate-900 border border-slate-800 rounded-xl shadow-lg space-y-3">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-300 mb-2">
+          {brand} Roster Divisions
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {tiersList.map((tier) => {
+            const tierWrestlers = brandSuperstars.filter((s) => s.tier === tier);
+            return (
+              <div key={tier} className="bg-slate-950 border border-slate-800 rounded-xl p-3 shadow-md flex flex-col">
+                <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                    {tier} ({tierWrestlers.length})
                   </span>
-                  <button onClick={() => { setIsCreatingChampion(false); setEditingChampId(null); }} className="text-slate-400 hover:text-white">
-                    <X className="w-4 h-4" />
-                  </button>
+                  <span className="text-[10px] text-slate-500">{brand}</span>
                 </div>
-                <div className="space-y-2">
-                  <div>
-                    <label className="block text-[10px] text-slate-400 mb-1">Title Name</label>
-                    <input
-                      type="text"
-                      value={champTitleName}
-                      onChange={(e) => setChampTitleName(e.target.value)}
-                      placeholder={`e.g. Undisputed ${brand} Championship`}
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white focus:border-amber-500 outline-none"
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[10px] text-slate-400 mb-1">Current Champion</label>
-                      <input
-                        type="text"
-                        value={champCurrentWinner}
-                        onChange={(e) => setChampCurrentWinner(e.target.value)}
-                        placeholder="Superstar Name..."
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white focus:border-amber-500 outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] text-slate-400 mb-1">Previous Champion (Optional)</label>
-                      <input
-                        type="text"
-                        value={champPrevWinner}
-                        onChange={(e) => setChampPrevWinner(e.target.value)}
-                        placeholder="Previous Holder..."
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white focus:border-amber-500 outline-none"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] text-slate-400 mb-1">Acquired / Won Date (e.g. Year 1 May W1)</label>
-                    <input
-                      type="text"
-                      value={champAcquiredDate}
-                      onChange={(e) => setChampAcquiredDate(e.target.value)}
-                      placeholder="e.g. Y1, May, Week 1"
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white focus:border-amber-500 outline-none"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[10px] text-slate-400 mb-1">Days Held (Manual)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={champDaysHeld}
-                        onChange={(e) => setChampDaysHeld(parseInt(e.target.value) || 0)}
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white focus:border-amber-500 outline-none font-bold text-amber-400"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] text-slate-400 mb-1">Successful Defenses</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={champDefenses}
-                        onChange={(e) => setChampDefenses(parseInt(e.target.value) || 0)}
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white focus:border-amber-500 outline-none"
-                      />
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleSaveChampionSubmit}
-                    disabled={!champTitleName.trim() || !champCurrentWinner.trim()}
-                    className="w-full py-1.5 font-bold rounded bg-amber-500 hover:bg-amber-400 text-slate-950 transition disabled:opacity-50 mt-2 flex items-center justify-center gap-1.5"
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                    {editingChampId ? 'Update Champion' : 'Save & Assign Champion'}
-                  </button>
-                </div>
-              </div>
-            )}
 
-            {brandChampions.length === 0 && !isCreatingChampion ? (
-              <p className="text-xs text-slate-500 italic">No champions logged for {brand} yet.</p>
-            ) : (
-              <div className="space-y-2">
-                {brandChampions.map((c) => (
-                  <div key={c.id} className="p-2.5 rounded-lg bg-slate-950 border border-amber-500/30 flex items-center justify-between text-xs group hover:border-amber-500/60 transition">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase text-amber-500 block">{c.titleName}</span>
-                      <span className="font-extrabold text-white text-sm">{c.currentChampion}</span>
-                      {c.acquiredDate && (
-                        <span className="text-[10px] text-purple-300 font-semibold block">Won: {c.acquiredDate}</span>
-                      )}
-                      {c.previousChampion && (
-                        <span className="text-[10px] text-slate-400 block">Prev: {c.previousChampion}</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="text-right text-[10px] text-slate-400">
-                        <div className="font-bold text-amber-300">{c.daysHeld} Days Reign</div>
-                        <div className="text-emerald-400 font-semibold">{c.defenses} Defenses</div>
-                      </div>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition ml-2">
-                        <button
-                          onClick={() => handleStartEditChampion(c)}
-                          className="p-1 text-slate-400 hover:text-amber-400 transition rounded hover:bg-slate-900"
-                          title="Edit Championship record"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        {onDeleteChampion && (
-                          <button
-                            onClick={() => onDeleteChampion(c.id)}
-                            className="p-1 text-slate-400 hover:text-red-400 transition rounded hover:bg-slate-900"
-                            title="Remove Championship record"
+                <div className="space-y-1.5 flex-1 max-h-[350px] overflow-y-auto scrollbar-thin pr-1">
+                  {tierWrestlers.length === 0 ? (
+                    <p className="text-xs text-slate-500 italic py-4 text-center">No superstars in {tier}</p>
+                  ) : (
+                    tierWrestlers.map((w) => (
+                      <div
+                        key={w.id}
+                        className="flex items-center justify-between p-2 rounded bg-slate-900/90 border border-slate-800 hover:border-slate-700 transition group text-xs"
+                      >
+                        <span className="font-semibold text-slate-200 truncate">{w.name}</span>
+                        <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition shrink-0 ml-1">
+                          <select
+                            value={w.tier}
+                            onChange={(e) => onMoveSuperstar(w.id, brand, e.target.value as TierType)}
+                            className="text-[10px] bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-slate-300"
+                            title="Move tier"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <option value="Top">Top</option>
+                            <option value="Middle">Mid</option>
+                            <option value="Low">Low</option>
+                            <option value="Female">Fem</option>
+                            <option value="Tag Team">Tag</option>
+                          </select>
+                          <button
+                            onClick={() => onDeleteSuperstar(w.id)}
+                            className="p-1 text-slate-400 hover:text-red-400 transition"
+                            title="Delete Superstar"
+                          >
+                            <Trash2 className="w-3 h-3" />
                           </button>
-                        )}
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                ))}
+                    ))
+                  )}
+                </div>
               </div>
-            )}
-          </div>
+            );
+          })}
+        </div>
+      </div>
 
           {/* Weekly Show Match Card Planner */}
           <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl shadow-lg space-y-3">
@@ -641,8 +802,6 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
               </div>
             )}
           </div>
-        </div>
-      </div>
     </div>
   );
 };

@@ -511,6 +511,13 @@ export default function App() {
     }));
   };
 
+  const handleReorderChampions = (reorderedChampions: ChampionEntry[]) => {
+    setAppState((prev) => ({
+      ...prev,
+      champions: reorderedChampions
+    }));
+  };
+
   // Handlers for Champion Archive
   const handleUpdateArchiveEntry = (entry: ArchiveEntry) => {
     setAppState((prev) => {
@@ -747,6 +754,7 @@ export default function App() {
             onAddChampion={handleAddChampion}
             onUpdateChampion={handleUpdateChampion}
             onDeleteChampion={handleDeleteChampion}
+            onReorderChampions={handleReorderChampions}
             universeTime={appState.universeTime || { year: 2, month: 'May', week: 'Day 1 (Start of Month - 0d)' }}
             onUpdateTime={handleUpdateTime}
           />
@@ -768,6 +776,7 @@ export default function App() {
             onAddChampion={handleAddChampion}
             onUpdateChampion={handleUpdateChampion}
             onDeleteChampion={handleDeleteChampion}
+            onReorderChampions={handleReorderChampions}
             universeTime={appState.universeTime || { year: 2, month: 'May', week: 'Day 1 (Start of Month - 0d)' }}
             onUpdateTime={handleUpdateTime}
           />
@@ -789,6 +798,7 @@ export default function App() {
             onAddChampion={handleAddChampion}
             onUpdateChampion={handleUpdateChampion}
             onDeleteChampion={handleDeleteChampion}
+            onReorderChampions={handleReorderChampions}
             universeTime={appState.universeTime || { year: 2, month: 'May', week: 'Day 1 (Start of Month - 0d)' }}
             onUpdateTime={handleUpdateTime}
           />

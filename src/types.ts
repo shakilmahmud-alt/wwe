@@ -124,6 +124,8 @@ export interface ChampionEntry {
   defenses: number;
   previousChampion?: string;
   acquiredDate?: string;
+  beltImage?: string;
+  wrestlerImage?: string;
 }
 
 export interface ArchiveEntry {
