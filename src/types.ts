@@ -1,6 +1,6 @@
 export type BrandType = 'RAW' | 'SmackDown' | 'NXT' | 'Women Tag' | 'Free Agent';
 
-export type TierType = 'Top' | 'Middle' | 'Low' | 'Female' | 'Tag Team';
+export type TierType = 'Top' | 'Middle' | 'Low' | 'Female' | 'Tag Team' | 'Women Tag Team';
 
 export interface Superstar {
   id: string;

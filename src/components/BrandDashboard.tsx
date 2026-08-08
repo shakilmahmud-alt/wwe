@@ -263,7 +263,7 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
     setIsCreatingShow(false);
   };
 
-  const tiersList: TierType[] = ['Top', 'Middle', 'Low', 'Female', 'Tag Team'];
+  const tiersList: TierType[] = ['Top', 'Middle', 'Low', 'Female', 'Tag Team', 'Women Tag Team'];
 
   return (
     <div className="max-w-[1920px] mx-auto p-4 md:p-6 space-y-6 text-slate-100">
@@ -353,6 +353,7 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
             <option value="Low">Low (Lower Card)</option>
             <option value="Female">Female Division</option>
             <option value="Tag Team">Tag Team</option>
+            <option value="Women Tag Team">Women's Tag Team</option>
           </select>
           <button
             type="submit"
@@ -608,7 +609,7 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
         <h3 className="text-sm font-bold uppercase tracking-wider text-slate-300 mb-2">
           {brand} Roster Divisions
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {tiersList.map((tier) => {
             const tierWrestlers = brandSuperstars.filter((s) => s.tier === tier);
             return (
@@ -642,6 +643,7 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
                             <option value="Low">Low</option>
                             <option value="Female">Fem</option>
                             <option value="Tag Team">Tag</option>
+                            <option value="Women Tag Team">W.Tag</option>
                           </select>
                           <button
                             onClick={() => onDeleteSuperstar(w.id)}
