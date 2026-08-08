@@ -287,66 +287,136 @@ export default function App() {
     }
   };
 
-  // Handlers for Superstars
+  // Handlers for Superstars & Women Tag Teams (Fully Synced)
   const handleAddSuperstar = (name: string, brand: BrandType, tier: TierType) => {
+    const newId = `s-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     const newSuperstar: Superstar = {
-      id: `s-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      id: newId,
       name,
       brand,
       tier
     };
-    setAppState((prev) => ({
-      ...prev,
-      superstars: [...prev.superstars, newSuperstar]
-    }));
+    setAppState((prev) => {
+      let updatedSuperstars = [...prev.superstars, newSuperstar];
+      let updatedWomenTag = prev.womenTagTeams || [];
+
+      if (tier === 'Women Tag Team') {
+        const newTeam: WomenTagTeam = {
+          id: newId,
+          teamName: name,
+          brand
+        };
+        if (!updatedWomenTag.some((t) => t.teamName.toLowerCase() === name.toLowerCase())) {
+          updatedWomenTag = [...updatedWomenTag, newTeam];
+        }
+      }
+
+      return {
+        ...prev,
+        superstars: updatedSuperstars,
+        womenTagTeams: updatedWomenTag
+      };
+    });
   };
 
   const handleUpdateSuperstarName = (id: string, name: string) => {
-    setAppState((prev) => ({
-      ...prev,
-      superstars: prev.superstars.map((s) => (s.id === id ? { ...s, name } : s))
-    }));
+    setAppState((prev) => {
+      const target = prev.superstars.find((s) => s.id === id);
+      const oldName = target ? target.name : '';
+      return {
+        ...prev,
+        superstars: prev.superstars.map((s) => (s.id === id ? { ...s, name } : s)),
+        womenTagTeams: (prev.womenTagTeams || []).map((t) =>
+          t.id === id || (oldName && t.teamName.toLowerCase() === oldName.toLowerCase()) ? { ...t, teamName: name } : t
+        )
+      };
+    });
   };
 
   const handleDeleteSuperstar = (id: string) => {
-    setAppState((prev) => ({
-      ...prev,
-      superstars: prev.superstars.filter((s) => s.id !== id)
-    }));
+    setAppState((prev) => {
+      const target = prev.superstars.find((s) => s.id === id);
+      const oldName = target ? target.name : '';
+      return {
+        ...prev,
+        superstars: prev.superstars.filter((s) => s.id !== id),
+        womenTagTeams: (prev.womenTagTeams || []).filter(
+          (t) => t.id !== id && (!oldName || t.teamName.toLowerCase() !== oldName.toLowerCase())
+        )
+      };
+    });
   };
 
   const handleMoveSuperstar = (id: string, newBrand: BrandType, newTier: TierType) => {
-    setAppState((prev) => ({
-      ...prev,
-      superstars: prev.superstars.map((s) => (s.id === id ? { ...s, brand: newBrand, tier: newTier } : s))
-    }));
+    setAppState((prev) => {
+      const target = prev.superstars.find((s) => s.id === id);
+      const oldName = target ? target.name : '';
+      let updatedSuperstars = prev.superstars.map((s) => (s.id === id ? { ...s, brand: newBrand, tier: newTier } : s));
+      let updatedWomenTag = (prev.womenTagTeams || []).map((t) =>
+        t.id === id || (oldName && t.teamName.toLowerCase() === oldName.toLowerCase()) ? { ...t, brand: newBrand } : t
+      );
+
+      if (newTier === 'Women Tag Team' && target) {
+        if (!updatedWomenTag.some((t) => t.id === id || t.teamName.toLowerCase() === target.name.toLowerCase())) {
+          updatedWomenTag.push({ id: target.id, teamName: target.name, brand: newBrand });
+        }
+      }
+
+      return {
+        ...prev,
+        superstars: updatedSuperstars,
+        womenTagTeams: updatedWomenTag
+      };
+    });
   };
 
   // Handlers for Women Tag Teams
   const handleAddWomenTagTeam = (teamName: string) => {
+    const newId = `wt-${Date.now()}`;
     const newTeam: WomenTagTeam = {
-      id: `wt-${Date.now()}`,
+      id: newId,
       teamName,
-      brand: 'Women Tag'
+      brand: 'RAW'
+    };
+    const newSuperstar: Superstar = {
+      id: newId,
+      name: teamName,
+      brand: 'RAW',
+      tier: 'Women Tag Team'
     };
     setAppState((prev) => ({
       ...prev,
-      womenTagTeams: [...prev.womenTagTeams, newTeam]
+      womenTagTeams: [...(prev.womenTagTeams || []), newTeam],
+      superstars: [...prev.superstars, newSuperstar]
     }));
   };
 
   const handleUpdateWomenTagTeam = (id: string, teamName: string) => {
-    setAppState((prev) => ({
-      ...prev,
-      womenTagTeams: prev.womenTagTeams.map((t) => (t.id === id ? { ...t, teamName } : t))
-    }));
+    setAppState((prev) => {
+      const target = (prev.womenTagTeams || []).find((t) => t.id === id);
+      const oldName = target ? target.teamName : '';
+      return {
+        ...prev,
+        womenTagTeams: (prev.womenTagTeams || []).map((t) => (t.id === id ? { ...t, teamName } : t)),
+        superstars: prev.superstars.map((s) =>
+          s.id === id || (oldName && s.name.toLowerCase() === oldName.toLowerCase()) ? { ...s, name: teamName } : s
+        )
+      };
+    });
   };
 
   const handleDeleteWomenTagTeam = (id: string) => {
-    setAppState((prev) => ({
-      ...prev,
-      womenTagTeams: prev.womenTagTeams.filter((t) => t.id !== id)
-    }));
+    setAppState((prev) => {
+      const target = (prev.womenTagTeams || []).find((t) => t.id === id);
+      const oldName = target ? target.teamName : '';
+      return {
+        ...prev,
+        womenTagTeams: (prev.womenTagTeams || []).filter((t) => t.id !== id),
+        superstars: prev.superstars.filter(
+          (s) => s.id !== id && (!oldName || s.name.toLowerCase() !== oldName.toLowerCase())
+        )
+      };
+    });
   };
 
   // Handlers for Show Plans
@@ -745,6 +815,7 @@ export default function App() {
             champions={appState.champions}
             rivalries={appState.rivalries}
             showPlans={appState.rawShowPlans}
+            womenTagTeams={appState.womenTagTeams}
             onAddSuperstar={handleAddSuperstar}
             onUpdateSuperstarName={handleUpdateSuperstarName}
             onDeleteSuperstar={handleDeleteSuperstar}
@@ -767,6 +838,7 @@ export default function App() {
             champions={appState.champions}
             rivalries={appState.rivalries}
             showPlans={appState.sdShowPlans}
+            womenTagTeams={appState.womenTagTeams}
             onAddSuperstar={handleAddSuperstar}
             onUpdateSuperstarName={handleUpdateSuperstarName}
             onDeleteSuperstar={handleDeleteSuperstar}
@@ -789,6 +861,7 @@ export default function App() {
             champions={appState.champions}
             rivalries={appState.rivalries}
             showPlans={appState.nxtShowPlans}
+            womenTagTeams={appState.womenTagTeams}
             onAddSuperstar={handleAddSuperstar}
             onUpdateSuperstarName={handleUpdateSuperstarName}
             onDeleteSuperstar={handleDeleteSuperstar}

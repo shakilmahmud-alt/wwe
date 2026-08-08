@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Superstar, BrandType, TierType, ChampionEntry, RivalryEntry, ShowPlan, MatchCardItem, UniverseTime } from '../types';
+import { Superstar, WomenTagTeam, BrandType, TierType, ChampionEntry, RivalryEntry, ShowPlan, MatchCardItem, UniverseTime } from '../types';
 import { Plus, Trash2, Edit2, Flame, Zap, Tv, Crown, Swords, Calendar, UserPlus, Check, X, GripVertical } from 'lucide-react';
 import { calculateDaysBetween, formatAcquiredDate, getDisplayAcquiredDate, UNIVERSE_MONTH_ORDER, UNIVERSE_WEEKS } from '../utils/universeTime';
 
@@ -9,6 +9,7 @@ interface BrandDashboardProps {
   champions: ChampionEntry[];
   rivalries: RivalryEntry[];
   showPlans: ShowPlan[];
+  womenTagTeams?: WomenTagTeam[];
   onAddSuperstar: (name: string, brand: BrandType, tier: TierType) => void;
   onUpdateSuperstarName: (id: string, name: string) => void;
   onDeleteSuperstar: (id: string) => void;
@@ -52,6 +53,7 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
   champions,
   rivalries,
   showPlans,
+  womenTagTeams = [],
   onAddSuperstar,
   onUpdateSuperstarName,
   onDeleteSuperstar,
@@ -72,6 +74,35 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
   // Input states
   const [newSuperstarName, setNewSuperstarName] = useState('');
   const [selectedTier, setSelectedTier] = useState<TierType>('Top');
+
+  // Helper to resolve tier wrestlers including women tag teams
+  const getTierWrestlers = (tier: TierType) => {
+    if (tier === 'Women Tag Team') {
+      const fromSuperstars = brandSuperstars.filter((s) => s.tier === 'Women Tag Team');
+      const existingNames = new Set(fromSuperstars.map((s) => s.name.toLowerCase()));
+
+      const fromWomenTag = (womenTagTeams || [])
+        .filter((wt) => {
+          if (wt.brand === brand) return true;
+          if (wt.brand === 'Women Tag' || !wt.brand) {
+            if (brand === 'RAW' && (wt.teamName.toLowerCase().includes('kabuki') || wt.teamName.toLowerCase().includes('rhiyo'))) return true;
+            if (brand === 'SmackDown' && (wt.teamName.toLowerCase().includes('charlotte') || wt.teamName.toLowerCase().includes('secret service'))) return true;
+            if (brand === 'NXT' && wt.teamName.toLowerCase().includes('fatal influence')) return true;
+          }
+          return false;
+        })
+        .map((wt) => ({
+          id: wt.id,
+          name: wt.teamName,
+          brand: brand,
+          tier: 'Women Tag Team' as TierType
+        }))
+        .filter((wt) => !existingNames.has(wt.name.toLowerCase()));
+
+      return [...fromSuperstars, ...fromWomenTag];
+    }
+    return brandSuperstars.filter((s) => s.tier === tier);
+  };
 
   // Drag and drop reordering for active champions
   const [draggedChampId, setDraggedChampId] = useState<string | null>(null);
@@ -611,7 +642,7 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {tiersList.map((tier) => {
-            const tierWrestlers = brandSuperstars.filter((s) => s.tier === tier);
+            const tierWrestlers = getTierWrestlers(tier);
             return (
               <div key={tier} className="bg-slate-950 border border-slate-800 rounded-xl p-3 shadow-md flex flex-col">
                 <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">

@@ -56,7 +56,18 @@ export const RosterSpreadsheet: React.FC<RosterSpreadsheetProps> = ({
   const nxtFemale = getList('NXT', 'Female');
   const nxtTag = getList('NXT', 'Tag Team');
 
-  const filteredWomenTag = womenTagTeams.filter((t) =>
+  const combinedWomenTagTeams = Array.from(
+    new Map(
+      [
+        ...(womenTagTeams || []).map((t) => ({ id: t.id, teamName: t.teamName, brand: t.brand || 'RAW' })),
+        ...superstars
+          .filter((s) => s.tier === 'Women Tag Team')
+          .map((s) => ({ id: s.id, teamName: s.name, brand: s.brand }))
+      ].map((item) => [item.teamName.toLowerCase(), item])
+    ).values()
+  );
+
+  const filteredWomenTag = combinedWomenTagTeams.filter((t) =>
     t.teamName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
