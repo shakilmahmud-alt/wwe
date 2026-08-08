@@ -687,6 +687,7 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
               </div>
             );
           })}
+        </div>
       </div>
     </div>
   );
