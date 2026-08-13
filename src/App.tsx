@@ -188,13 +188,13 @@ export default function App() {
             };
 
             setAppState(mergedState);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(mergedState));
+            safeSaveLocalStorage(STORAGE_KEY, mergedState);
             // Sync merged state back to Supabase
-            saveToSupabase(mergedState).catch((err) => console.warn('Boot cloud sync error:', err));
+            saveToSupabase(mergedState).catch((err) => console.warn('Boot cloud sync notice:', err));
             console.log('Successfully hydrated and merged state on boot');
           }
         } catch (e) {
-          console.error('Cloud hydration error:', e);
+          console.warn('Cloud hydration notice:', e);
         }
       }
       isHydratedRef.current = true;
@@ -206,26 +206,31 @@ export default function App() {
     };
   }, []);
 
-  // Save state to LocalStorage and auto-sync to Supabase (after hydration is ready)
-  useEffect(() => {
+  // Safe helper to save state to LocalStorage (safely strips heavy base64 strings if quota exceeded)
+  function safeSaveLocalStorage(key: string, state: AppState) {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+      localStorage.setItem(key, JSON.stringify(state));
     } catch (err: any) {
-      console.warn('Failed to save state to localStorage (quota exceeded), stripping base64 image strings:', err);
+      console.warn('localStorage quota exceeded, stripping heavy base64 images:', err);
       try {
         const cleanedState = {
-          ...appState,
-          champions: (appState.champions || []).map((c) => ({
+          ...state,
+          champions: (state.champions || []).map((c) => ({
             ...c,
-            wrestlerImage: c.wrestlerImage?.startsWith('data:image/') ? undefined : c.wrestlerImage,
-            beltImage: c.beltImage?.startsWith('data:image/') ? undefined : c.beltImage
+            wrestlerImage: c.wrestlerImage?.startsWith('data:image/') ? (c.currentChampion ? `/${encodeURIComponent(c.currentChampion)}.png` : '') : c.wrestlerImage,
+            beltImage: c.beltImage?.startsWith('data:image/') ? '' : c.beltImage
           }))
         };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanedState));
+        localStorage.setItem(key, JSON.stringify(cleanedState));
       } catch (cleanErr) {
-        console.error('Final localStorage save attempt error:', cleanErr);
+        console.warn('Final localStorage save notice:', cleanErr);
       }
     }
+  }
+
+  // Save state to LocalStorage and auto-sync to Supabase (after hydration is ready)
+  useEffect(() => {
+    safeSaveLocalStorage(STORAGE_KEY, appState);
 
     // NEVER auto-overwrite Supabase until initial mount cloud check is finished
     if (!isHydratedRef.current) {

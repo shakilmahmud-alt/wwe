@@ -168,6 +168,7 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
   const [champWrestlerImage, setChampWrestlerImage] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const [imgErrorMap, setImgErrorMap] = useState<Record<string, boolean>>({});
 
   // File upload handler (Instant local preview + fast ImageKit.io upload)
   const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -676,18 +677,41 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
                 <div className="relative w-full h-[390px] overflow-hidden bg-slate-900 flex-shrink-0">
                   {(() => {
                     const imgSrc = formatImageUrl(c.wrestlerImage, c.currentChampion);
-                    return imgSrc ? (
-                      <img
-                        src={imgSrc}
-                        alt={c.currentChampion}
-                        className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-b from-purple-950/80 via-slate-900 to-slate-950 flex items-center justify-center">
-                        <Crown className="w-28 h-28 text-amber-500/20" />
+                    const isFailed = imgErrorMap[c.id];
+
+                    if (imgSrc && !isFailed) {
+                      return (
+                        <img
+                          src={imgSrc}
+                          alt={c.currentChampion}
+                          className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                          onError={() => {
+                            setImgErrorMap(prev => ({ ...prev, [c.id]: true }));
+                          }}
+                        />
+                      );
+                    }
+
+                    return (
+                      <div className="w-full h-full bg-gradient-to-b from-amber-950/40 via-slate-900 to-slate-950 flex flex-col items-center justify-center p-4 text-center gap-3">
+                        <Crown className="w-20 h-20 text-amber-500/30 animate-pulse" />
+                        <span className="text-xs font-extrabold text-amber-400/90">{c.currentChampion || 'No Champion Set'}</span>
+                        <label className="cursor-pointer px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-black shadow-lg transition flex items-center gap-1.5 z-20">
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>Upload Photo to ImageKit</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                setImgErrorMap(prev => ({ ...prev, [c.id]: false }));
+                                handleQuickUploadForChampion(c, file);
+                              }
+                            }}
+                          />
+                        </label>
                       </div>
                     );
                   })()}
