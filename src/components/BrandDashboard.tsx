@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Superstar, WomenTagTeam, BrandType, TierType, ChampionEntry, RivalryEntry, ShowPlan, MatchCardItem, UniverseTime } from '../types';
-import { Plus, Trash2, Edit2, Flame, Zap, Tv, Crown, Swords, Calendar, UserPlus, Check, X, GripVertical } from 'lucide-react';
+import { Plus, Trash2, Edit2, Flame, Zap, Tv, Crown, Swords, Calendar, UserPlus, Check, X, GripVertical, Upload, Image as ImageIcon } from 'lucide-react';
 import { calculateDaysBetween, formatAcquiredDate, getDisplayAcquiredDate, UNIVERSE_MONTH_ORDER, UNIVERSE_WEEKS } from '../utils/universeTime';
 
 interface BrandDashboardProps {
@@ -165,6 +165,93 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
   const [champDefenses, setChampDefenses] = useState<number>(0);
   const [champBeltImage, setChampBeltImage] = useState('');
   const [champWrestlerImage, setChampWrestlerImage] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+
+  // File upload handler (saves binary directly to public/ via Vite server API)
+  const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    setUploadMessage('Uploading image...');
+
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/octet-stream',
+          'x-file-name': encodeURIComponent(file.name)
+        },
+        body: file
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.url) {
+          setChampWrestlerImage(data.url);
+          setUploadMessage(`✅ Saved to public/${data.fileName}`);
+          setIsUploading(false);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('Upload endpoint unavailable, using Data URL fallback', err);
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setChampWrestlerImage(reader.result);
+        setUploadMessage('✅ Image loaded');
+      }
+      setIsUploading(false);
+    };
+    reader.onerror = () => {
+      setUploadMessage('❌ File read error');
+      setIsUploading(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Direct quick upload for champion card
+  const handleQuickUploadForChampion = async (c: ChampionEntry, file: File) => {
+    try {
+      let newUrl = '';
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/octet-stream',
+          'x-file-name': encodeURIComponent(file.name)
+        },
+        body: file
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.url) {
+          newUrl = data.url;
+        }
+      }
+
+      if (!newUrl) {
+        newUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+          reader.readAsDataURL(file);
+        });
+      }
+
+      if (newUrl && onUpdateChampion) {
+        onUpdateChampion({
+          ...c,
+          wrestlerImage: newUrl
+        });
+      }
+    } catch (err) {
+      console.error('Direct champion image upload error:', err);
+    }
+  };
 
   const handleStartEditChampion = (c: ChampionEntry) => {
     setEditingChampId(c.id);
@@ -498,19 +585,58 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
                   />
                 </div>
               </div>
-              <div>
-                <label className="block text-[10px] text-amber-300 mb-1 font-bold uppercase">
-                  Superstar Image Path / URL
+              {/* Superstar Image & File Upload Section */}
+              <div className="space-y-2.5 p-3 bg-slate-900/90 rounded-lg border border-amber-500/40">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] text-amber-300 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                    <ImageIcon className="w-3.5 h-3.5 text-amber-400" />
+                    Superstar Image Upload / Path
+                  </label>
+                  {uploadMessage && (
+                    <span className="text-[10px] font-bold text-emerald-400">{uploadMessage}</span>
+                  )}
+                </div>
+
+                {/* File Upload Button */}
+                <label className="cursor-pointer flex items-center justify-center gap-2 px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg font-extrabold text-xs transition shadow-md group">
+                  <Upload className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                  <span>{isUploading ? 'Uploading to public/ folder...' : '📁 Upload Image File (Auto Saves to public/)'}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageFileUpload}
+                    className="hidden"
+                  />
                 </label>
-                <input
-                  type="text"
-                  value={champWrestlerImage}
-                  onChange={(e) => setChampWrestlerImage(e.target.value)}
-                  placeholder="/bray_wyatt.png  or  /images/bray_wyatt.png  or  https://..."
-                  className="w-full bg-slate-900 border border-amber-500/60 rounded px-2.5 py-1.5 text-white focus:border-amber-400 outline-none font-mono text-xs"
-                />
-                <p className="text-[10px] text-slate-400 mt-1 italic">
-                  💡 Tip: Put image file in your <code className="text-amber-300 font-mono">public/</code> folder (e.g. <code className="text-amber-300 font-mono">public/bray_wyatt.png</code>) and type <code className="text-amber-300 font-mono">/bray_wyatt.png</code> here!
+
+                {/* Manual Image Path Input */}
+                <div>
+                  <input
+                    type="text"
+                    value={champWrestlerImage}
+                    onChange={(e) => setChampWrestlerImage(e.target.value)}
+                    placeholder="/cody_rhodes.png  or  /images/bray_wyatt.png  or  https://..."
+                    className="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-white focus:border-amber-400 outline-none font-mono text-xs"
+                  />
+                </div>
+
+                {/* Live Image Thumbnail Preview */}
+                {champWrestlerImage && (
+                  <div className="flex items-center gap-3 pt-2 border-t border-slate-800/80">
+                    <span className="text-[10px] text-slate-400 font-semibold">Live Preview:</span>
+                    <img
+                      src={formatImageUrl(champWrestlerImage, champCurrentWinner)}
+                      alt="Preview"
+                      className="w-12 h-12 object-cover object-top rounded-lg border-2 border-amber-500/60 shadow-md"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                    <span className="text-[10px] text-amber-300/90 font-mono truncate max-w-[240px]">{champWrestlerImage}</span>
+                  </div>
+                )}
+                <p className="text-[10px] text-slate-400 italic">
+                  💡 Tip: Uploading an image file saves it directly into your project's <code className="text-amber-300 font-mono">public/</code> folder and updates live immediately!
                 </p>
               </div>
               <button
@@ -547,6 +673,21 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
                     <span className="p-1 text-amber-400/80 cursor-grab hover:text-amber-400" title="Drag to reorder">
                       <GripVertical className="w-3.5 h-3.5" />
                     </span>
+                    <label
+                      className="p-1 text-slate-300 hover:text-emerald-400 transition rounded hover:bg-slate-800 cursor-pointer"
+                      title="Upload Image for this Champion (Saves to public/)"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleQuickUploadForChampion(c, f);
+                        }}
+                        className="hidden"
+                      />
+                    </label>
                     <button
                       onClick={() => handleStartEditChampion(c)}
                       className="p-1 text-slate-300 hover:text-amber-400 transition rounded hover:bg-slate-800"
