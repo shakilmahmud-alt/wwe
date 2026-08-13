@@ -222,8 +222,21 @@ export default function App() {
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
-    } catch (err) {
-      console.error('Failed to save state to localStorage:', err);
+    } catch (err: any) {
+      console.warn('Failed to save state to localStorage (quota exceeded), stripping base64 image strings:', err);
+      try {
+        const cleanedState = {
+          ...appState,
+          champions: (appState.champions || []).map((c) => ({
+            ...c,
+            wrestlerImage: c.wrestlerImage?.startsWith('data:image/') ? undefined : c.wrestlerImage,
+            beltImage: c.beltImage?.startsWith('data:image/') ? undefined : c.beltImage
+          }))
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanedState));
+      } catch (cleanErr) {
+        console.error('Final localStorage save attempt error:', cleanErr);
+      }
     }
 
     // NEVER auto-overwrite Supabase until initial mount cloud check is finished

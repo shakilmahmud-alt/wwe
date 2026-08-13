@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Superstar, WomenTagTeam, BrandType, TierType, ChampionEntry, RivalryEntry, ShowPlan, MatchCardItem, UniverseTime } from '../types';
 import { Plus, Trash2, Edit2, Flame, Zap, Tv, Crown, Swords, Calendar, UserPlus, Check, X, GripVertical, Upload, Image as ImageIcon } from 'lucide-react';
 import { calculateDaysBetween, formatAcquiredDate, getDisplayAcquiredDate, UNIVERSE_MONTH_ORDER, UNIVERSE_WEEKS } from '../utils/universeTime';
+import { uploadToImageKit } from '../lib/imagekit';
 
 interface BrandDashboardProps {
   brand: BrandType;
@@ -168,88 +169,41 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
 
-  // File upload handler (saves binary directly to public/ via Vite server API)
+  // File upload handler (uploads directly to ImageKit.io cloud CDN)
   const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsUploading(true);
-    setUploadMessage('Uploading image...');
+    setUploadMessage('Uploading to ImageKit.io...');
 
     try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/octet-stream',
-          'x-file-name': encodeURIComponent(file.name)
-        },
-        body: file
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.url) {
-          setChampWrestlerImage(data.url);
-          setUploadMessage(`✅ Saved to public/${data.fileName}`);
-          setIsUploading(false);
-          return;
-        }
+      const url = await uploadToImageKit(file);
+      if (url) {
+        setChampWrestlerImage(url);
+        setUploadMessage('✅ Uploaded to ImageKit CDN!');
+        setIsUploading(false);
+        return;
       }
-    } catch (err) {
-      console.warn('Upload endpoint unavailable, using Data URL fallback', err);
+    } catch (err: any) {
+      console.error('ImageKit upload error:', err);
+      setUploadMessage('❌ Upload failed');
+      setIsUploading(false);
     }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        setChampWrestlerImage(reader.result);
-        setUploadMessage('✅ Image loaded');
-      }
-      setIsUploading(false);
-    };
-    reader.onerror = () => {
-      setUploadMessage('❌ File read error');
-      setIsUploading(false);
-    };
-    reader.readAsDataURL(file);
   };
 
-  // Direct quick upload for champion card
+  // Direct quick upload for champion card to ImageKit.io
   const handleQuickUploadForChampion = async (c: ChampionEntry, file: File) => {
     try {
-      let newUrl = '';
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/octet-stream',
-          'x-file-name': encodeURIComponent(file.name)
-        },
-        body: file
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.url) {
-          newUrl = data.url;
-        }
-      }
-
-      if (!newUrl) {
-        newUrl = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
-          reader.readAsDataURL(file);
-        });
-      }
-
-      if (newUrl && onUpdateChampion) {
+      const url = await uploadToImageKit(file);
+      if (url && onUpdateChampion) {
         onUpdateChampion({
           ...c,
-          wrestlerImage: newUrl
+          wrestlerImage: url
         });
       }
     } catch (err) {
-      console.error('Direct champion image upload error:', err);
+      console.error('Direct champion ImageKit upload error:', err);
     }
   };
 
@@ -598,9 +552,9 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
                 </div>
 
                 {/* File Upload Button */}
-                <label className="cursor-pointer flex items-center justify-center gap-2 px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg font-extrabold text-xs transition shadow-md group">
+                <label className="cursor-pointer flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 rounded-lg font-extrabold text-xs transition shadow-md group">
                   <Upload className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                  <span>{isUploading ? 'Uploading to public/ folder...' : '📁 Upload Image File (Auto Saves to public/)'}</span>
+                  <span>{isUploading ? 'Uploading to ImageKit.io...' : '☁️ Upload Image to ImageKit.io (Fast Cloud CDN)'}</span>
                   <input
                     type="file"
                     accept="image/*"
