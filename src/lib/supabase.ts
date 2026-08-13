@@ -21,16 +21,17 @@ export const SUPABASE_ROW_ID = 'main_save';
 export async function saveToSupabase(data: AppState): Promise<{ success: boolean; error?: any }> {
   try {
     // 1. Save full JSON state to wwe_universe_data table
+    const cleanData = JSON.parse(JSON.stringify(data));
     const { error: mainError } = await supabase
       .from(SUPABASE_TABLE_NAME)
       .upsert({
         id: SUPABASE_ROW_ID,
-        data: data,
+        data: cleanData,
         updated_at: new Date().toISOString()
       }, { onConflict: 'id' });
 
     if (mainError) {
-      console.error('Supabase save error (wwe_universe_data):', mainError);
+      console.warn('Supabase save notice (wwe_universe_data):', mainError.message || mainError.details || mainError);
     }
 
     // 2. Sync individual superstars into relational 'superstars' table in Supabase
@@ -57,7 +58,7 @@ export async function saveToSupabase(data: AppState): Promise<{ success: boolean
           .upsert(formattedSuperstars, { onConflict: 'id' });
 
         if (superstarsError) {
-          console.error('Supabase save error (superstars table):', superstarsError);
+          console.warn('Supabase save notice (superstars table):', superstarsError.message || superstarsError);
           return { success: false, error: superstarsError };
         }
       }
@@ -142,7 +143,7 @@ export async function saveToSupabase(data: AppState): Promise<{ success: boolean
       }));
       const { error: amError } = await supabase.from('achievements_men').upsert(formattedMen, { onConflict: 'id' });
       if (amError && amError.code !== 'PGRST205') {
-        console.error('Supabase save error (achievements_men table):', amError);
+        console.warn('Supabase save notice (achievements_men table):', amError.message || amError);
       }
     }
 
@@ -162,7 +163,7 @@ export async function saveToSupabase(data: AppState): Promise<{ success: boolean
       }));
       const { error: awError } = await supabase.from('achievements_women').upsert(formattedWomen, { onConflict: 'id' });
       if (awError && awError.code !== 'PGRST205') {
-        console.error('Supabase save error (achievements_women table):', awError);
+        console.warn('Supabase save notice (achievements_women table):', awError.message || awError);
       }
     }
 
