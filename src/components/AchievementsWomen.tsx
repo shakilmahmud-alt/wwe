@@ -59,11 +59,28 @@ export const AchievementsWomen: React.FC<AchievementsWomenProps> = ({
     });
   };
 
-  const handleNumberChange = (id: string, field: 'royalRumbleCount' | 'mitbCount', value: number) => {
-    const entry = achievements.find(a => a.id === id);
-    if (entry) {
-      onUpdateAchievement({ ...entry, [field]: value });
+  const getExtraCount = (a: AchievementFemale, field: 'royalRumble' | 'mitb'): number => {
+    if (field === 'royalRumble') {
+      if (typeof a.royalRumbleCount === 'number' && a.royalRumbleCount > 0) return a.royalRumbleCount;
+      return a.royalRumble ? 1 : 0;
+    } else {
+      if (typeof a.mitbCount === 'number' && a.mitbCount > 0) return a.mitbCount;
+      return a.mitb ? 1 : 0;
     }
+  };
+
+  const handleUpdateExtraCount = (
+    a: AchievementFemale,
+    field: 'royalRumble' | 'mitb',
+    newCount: number
+  ) => {
+    const safeCount = Math.max(0, newCount);
+    const countField = field === 'royalRumble' ? 'royalRumbleCount' : 'mitbCount';
+    onUpdateAchievement({
+      ...a,
+      [field]: safeCount > 0,
+      [countField]: safeCount
+    });
   };
 
   const handleCreate = (e: React.FormEvent) => {
@@ -409,19 +426,55 @@ export const AchievementsWomen: React.FC<AchievementsWomenProps> = ({
                       </td>
 
                       {/* Royal Rumble Column */}
-                      <td
-                        onClick={() => handleToggleTitle(a, 'royalRumble')}
-                        className={`${cellBase} ${a.royalRumble ? 'bg-emerald-950/20' : ''}`}
-                      >
-                        {a.royalRumble ? <span className={extCheckColor}>✓</span> : ''}
+                      <td className="border-r border-b border-slate-800/60 text-center px-1 py-1.5 bg-emerald-950/10">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleUpdateExtraCount(a, 'royalRumble', getExtraCount(a, 'royalRumble') - 1); }}
+                            disabled={getExtraCount(a, 'royalRumble') === 0}
+                            className="w-4 h-4 text-[10px] font-bold bg-slate-900 hover:bg-slate-800 disabled:opacity-20 text-slate-400 rounded flex items-center justify-center border border-slate-700/80 transition"
+                            title="Decrease Royal Rumble count"
+                          >-</button>
+                          <span
+                            onClick={() => handleUpdateExtraCount(a, 'royalRumble', getExtraCount(a, 'royalRumble') + 1)}
+                            className={`font-extrabold text-xs cursor-pointer select-none px-1.5 py-0.5 rounded transition ${
+                              getExtraCount(a, 'royalRumble') > 0 ? 'text-emerald-400 bg-emerald-950/80 border border-emerald-500/40 shadow-sm' : 'text-slate-600 hover:text-slate-400'
+                            }`}
+                            title="Click to increase count"
+                          >
+                            {getExtraCount(a, 'royalRumble') > 0 ? `✓ ${getExtraCount(a, 'royalRumble')}x` : '-'}
+                          </span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleUpdateExtraCount(a, 'royalRumble', getExtraCount(a, 'royalRumble') + 1); }}
+                            className="w-4 h-4 text-[10px] font-bold bg-slate-900 hover:bg-slate-800 text-emerald-400 rounded flex items-center justify-center border border-slate-700/80 transition"
+                            title="Increase Royal Rumble count"
+                          >+</button>
+                        </div>
                       </td>
 
                       {/* MITB Column */}
-                      <td
-                        onClick={() => handleToggleTitle(a, 'mitb')}
-                        className={`${cellBase} ${a.mitb ? 'bg-emerald-950/20' : ''}`}
-                      >
-                        {a.mitb ? <span className={extCheckColor}>✓</span> : ''}
+                      <td className="border-r border-b border-slate-800/60 text-center px-1 py-1.5 bg-emerald-950/10">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleUpdateExtraCount(a, 'mitb', getExtraCount(a, 'mitb') - 1); }}
+                            disabled={getExtraCount(a, 'mitb') === 0}
+                            className="w-4 h-4 text-[10px] font-bold bg-slate-900 hover:bg-slate-800 disabled:opacity-20 text-slate-400 rounded flex items-center justify-center border border-slate-700/80 transition"
+                            title="Decrease MITB count"
+                          >-</button>
+                          <span
+                            onClick={() => handleUpdateExtraCount(a, 'mitb', getExtraCount(a, 'mitb') + 1)}
+                            className={`font-extrabold text-xs cursor-pointer select-none px-1.5 py-0.5 rounded transition ${
+                              getExtraCount(a, 'mitb') > 0 ? 'text-emerald-400 bg-emerald-950/80 border border-emerald-500/40 shadow-sm' : 'text-slate-600 hover:text-slate-400'
+                            }`}
+                            title="Click to increase count"
+                          >
+                            {getExtraCount(a, 'mitb') > 0 ? `✓ ${getExtraCount(a, 'mitb')}x` : '-'}
+                          </span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleUpdateExtraCount(a, 'mitb', getExtraCount(a, 'mitb') + 1); }}
+                            className="w-4 h-4 text-[10px] font-bold bg-slate-900 hover:bg-slate-800 text-emerald-400 rounded flex items-center justify-center border border-slate-700/80 transition"
+                            title="Increase MITB count"
+                          >+</button>
+                        </div>
                       </td>
 
                       {/* Delete Action */}
