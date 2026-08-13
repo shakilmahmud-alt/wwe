@@ -138,18 +138,17 @@ export default function App() {
       needsUpdate = true;
     }
 
-    if (!appState.matrixColumns || appState.matrixColumns.length === 0 || (appState.matrixColumns.length > 0 && appState.matrixColumns[0].brand === 'SmackDown')) {
+    if (!appState.matrixColumns || appState.matrixColumns.length === 0) {
       nextState.matrixColumns = sampleFullData.matrixColumns;
       needsUpdate = true;
     }
 
-    if (!appState.historyMatrix || appState.historyMatrix.length === 0 || !appState.historyMatrix[0]?.champions) {
+    if (!appState.historyMatrix || appState.historyMatrix.length === 0) {
       nextState.historyMatrix = sampleFullData.historyMatrix;
       needsUpdate = true;
     }
 
-    // Force hydrate emptyMatrix if missing or if the months are blank (from older save state)
-    if (!appState.emptyMatrix || appState.emptyMatrix.length === 0 || !appState.emptyMatrix[0]?.month || !appState.emptyMatrix[0]?.champions) {
+    if (!appState.emptyMatrix || appState.emptyMatrix.length === 0) {
       nextState.emptyMatrix = sampleFullData.emptyMatrix;
       needsUpdate = true;
     }
@@ -173,37 +172,26 @@ export default function App() {
           const cloudRes = await loadFromSupabase();
           if (isMounted && cloudRes.success && cloudRes.data) {
             const cloudData = cloudRes.data;
-            const cloudSuperstarCount = cloudData.superstars?.length || 0;
 
             const savedLocal = localStorage.getItem(STORAGE_KEY);
             const localData = savedLocal ? JSON.parse(savedLocal) : null;
-            const localSuperstarCount = localData?.superstars?.length || 0;
 
-            // If Supabase has data and local storage is empty or has fewer items, hydrate from Supabase Cloud!
-            if (cloudSuperstarCount > 0 && (localSuperstarCount === 0 || cloudSuperstarCount >= localSuperstarCount)) {
-              if (!cloudData.matrixColumns || cloudData.matrixColumns.length === 0 || (cloudData.matrixColumns.length > 0 && cloudData.matrixColumns[0].brand === 'SmackDown')) {
-                cloudData.matrixColumns = sampleFullData.matrixColumns;
-              }
-              if (!cloudData.historyMatrix || cloudData.historyMatrix.length === 0 || !cloudData.historyMatrix[0]?.champions) {
-                cloudData.historyMatrix = sampleFullData.historyMatrix;
-              }
-              if (!cloudData.emptyMatrix || cloudData.emptyMatrix.length === 0 || !cloudData.emptyMatrix[0]?.month || !cloudData.emptyMatrix[0]?.champions) {
-                cloudData.emptyMatrix = sampleFullData.emptyMatrix;
-              }
-              if (!cloudData.championArchive || cloudData.championArchive.length === 0) {
-                cloudData.championArchive = sampleFullData.championArchive;
-              }
-              if (!cloudData.achievementsMen || cloudData.achievementsMen.length === 0) {
-                cloudData.achievementsMen = sampleFullData.achievementsMen;
-              }
-              const hasAnyCloudWomenData = cloudData.achievementsWomen?.some((a: any) => a.rawWomen || a.sdWomen || a.nxt || a.ic || a.us || a.womenTag || a.nxtUk || a.nxtNa || a.nxtTag);
-              if (!cloudData.achievementsWomen || cloudData.achievementsWomen.length < 66 || !hasAnyCloudWomenData) {
-                cloudData.achievementsWomen = sampleFullData.achievementsWomen;
-              }
+            // Merge local matrix & timeline edits with cloud data so local updates are never lost
+            const mergedState: AppState = {
+              ...cloudData,
+              emptyMatrix: (localData?.emptyMatrix && localData.emptyMatrix.length > 0) ? localData.emptyMatrix : (cloudData.emptyMatrix || sampleFullData.emptyMatrix),
+              historyMatrix: (localData?.historyMatrix && localData.historyMatrix.length > 0) ? localData.historyMatrix : (cloudData.historyMatrix || sampleFullData.historyMatrix),
+              customMatrices: (localData?.customMatrices && localData.customMatrices.length > 0) ? localData.customMatrices : (cloudData.customMatrices || []),
+              ppvTimelines: (localData?.ppvTimelines && localData.ppvTimelines.length > 0) ? localData.ppvTimelines : (cloudData.ppvTimelines || []),
+              matrixColumns: (localData?.matrixColumns && localData.matrixColumns.length > 0) ? localData.matrixColumns : (cloudData.matrixColumns || sampleFullData.matrixColumns),
+              championArchive: (localData?.championArchive && localData.championArchive.length > 0) ? localData.championArchive : (cloudData.championArchive || sampleFullData.championArchive)
+            };
 
-              setAppState(cloudData);
-              console.log('Hydrated state from Supabase Cloud on boot');
-            }
+            setAppState(mergedState);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(mergedState));
+            // Sync merged state back to Supabase
+            saveToSupabase(mergedState).catch((err) => console.warn('Boot cloud sync error:', err));
+            console.log('Successfully hydrated and merged state on boot');
           }
         } catch (e) {
           console.error('Cloud hydration error:', e);
