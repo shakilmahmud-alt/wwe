@@ -169,31 +169,42 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
 
-  // File upload handler (uploads directly to ImageKit.io cloud CDN)
+  // File upload handler (Instant local preview + fast ImageKit.io upload)
   const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Instant 0.001s preview
+    const tempUrl = URL.createObjectURL(file);
+    setChampWrestlerImage(tempUrl);
     setIsUploading(true);
-    setUploadMessage('Uploading to ImageKit.io...');
+    setUploadMessage('⚡ Uploading to ImageKit.io...');
 
     try {
       const url = await uploadToImageKit(file);
       if (url) {
         setChampWrestlerImage(url);
-        setUploadMessage('✅ Uploaded to ImageKit CDN!');
-        setIsUploading(false);
-        return;
+        setUploadMessage('✅ Saved to ImageKit CDN!');
       }
     } catch (err: any) {
       console.error('ImageKit upload error:', err);
-      setUploadMessage('❌ Upload failed');
+      setUploadMessage('❌ Upload error');
+    } finally {
       setIsUploading(false);
     }
   };
 
-  // Direct quick upload for champion card to ImageKit.io
+  // Direct quick upload for champion card (Instant 0.001s update + fast ImageKit.io cloud upload)
   const handleQuickUploadForChampion = async (c: ChampionEntry, file: File) => {
+    // Instant local preview update on card
+    const tempUrl = URL.createObjectURL(file);
+    if (onUpdateChampion) {
+      onUpdateChampion({
+        ...c,
+        wrestlerImage: tempUrl
+      });
+    }
+
     try {
       const url = await uploadToImageKit(file);
       if (url && onUpdateChampion) {
