@@ -200,6 +200,9 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
 
   // Direct quick upload for champion card (Instant 0.001s update + fast ImageKit.io cloud upload)
   const handleQuickUploadForChampion = async (c: ChampionEntry, file: File) => {
+    // Reset any failed image state for this champion card immediately
+    setImgErrorMap((prev) => ({ ...prev, [c.id]: false }));
+
     // Instant local preview update on card
     const tempUrl = URL.createObjectURL(file);
     if (onUpdateChampion) {
@@ -212,6 +215,7 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
     try {
       const url = await uploadToImageKit(file);
       if (url && onUpdateChampion) {
+        setImgErrorMap((prev) => ({ ...prev, [c.id]: false }));
         onUpdateChampion({
           ...c,
           wrestlerImage: url
@@ -605,7 +609,7 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
                   </div>
                 )}
                 <p className="text-[10px] text-slate-400 italic">
-                  💡 Tip: Uploading an image file saves it directly into your project's <code className="text-amber-300 font-mono">public/</code> folder and updates live immediately!
+                  💡 Tip: Uploading an image file saves it directly to ImageKit.io cloud CDN and updates live instantly across all cards!
                 </p>
               </div>
               <button
@@ -644,7 +648,7 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
                     </span>
                     <label
                       className="p-1 text-slate-300 hover:text-emerald-400 transition rounded hover:bg-slate-800 cursor-pointer"
-                      title="Upload Image for this Champion (Saves to public/)"
+                      title="Upload Image for this Champion to ImageKit.io"
                     >
                       <Upload className="w-3.5 h-3.5" />
                       <input
@@ -652,7 +656,10 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
                         accept="image/*"
                         onChange={(e) => {
                           const f = e.target.files?.[0];
-                          if (f) handleQuickUploadForChampion(c, f);
+                          if (f) {
+                            setImgErrorMap((prev) => ({ ...prev, [c.id]: false }));
+                            handleQuickUploadForChampion(c, f);
+                          }
                         }}
                         className="hidden"
                       />
@@ -676,8 +683,8 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
                   </div>
                 </div>
 
-                {/* Superstar Image Section (Massive 390px Height & Crystal Clear) */}
-                <div className="relative w-full h-[390px] overflow-hidden bg-slate-900 flex-shrink-0">
+                {/* Superstar Image Section (Massive 390px Height & Crystal Clear Fit) */}
+                <div className="relative w-full h-[390px] overflow-hidden bg-slate-950 flex-shrink-0 flex items-center justify-center">
                   {(() => {
                     const imgSrc = formatImageUrl(c.wrestlerImage, c.currentChampion);
                     const isFailed = imgErrorMap[c.id];
@@ -687,7 +694,7 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
                         <img
                           src={imgSrc}
                           alt={c.currentChampion}
-                          className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                          className="w-full h-full object-contain object-top transition-transform duration-500 group-hover:scale-105"
                           onError={() => {
                             setImgErrorMap(prev => ({ ...prev, [c.id]: true }));
                           }}
