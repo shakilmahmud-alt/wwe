@@ -239,17 +239,15 @@ export default function App() {
 
     // Debounce auto-save to Supabase to prevent empty/half-edited overwrites
     const timer = setTimeout(async () => {
-      if (import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY) {
-        setIsCloudSyncing(true);
-        try {
-          await saveToSupabase(appState);
-        } catch (err) {
-          console.error('Auto Supabase sync error:', err);
-        } finally {
-          setIsCloudSyncing(false);
-        }
+      setIsCloudSyncing(true);
+      try {
+        await saveToSupabase(appState);
+      } catch (err) {
+        console.warn('Auto Supabase sync notice:', err);
+      } finally {
+        setIsCloudSyncing(false);
       }
-    }, 600);
+    }, 1000);
 
     return () => clearTimeout(timer);
   }, [appState]);
