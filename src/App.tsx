@@ -293,7 +293,16 @@ export default function App() {
     }
   };
 
-  // Handlers for Superstars & Women Tag Teams (Fully Synced)
+  // Helpers to maintain alphabetical sorting (A to Z) across the entire application
+  const sortSuperstarsAlphabetically = (list: Superstar[]): Superstar[] => {
+    return [...list].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base', numeric: true }));
+  };
+
+  const sortWomenTagTeamsAlphabetically = (list: WomenTagTeam[]): WomenTagTeam[] => {
+    return [...list].sort((a, b) => a.teamName.localeCompare(b.teamName, undefined, { sensitivity: 'base', numeric: true }));
+  };
+
+  // Handlers for Superstars & Women Tag Teams (Fully Synced & Alphabetically Sorted)
   const handleAddSuperstar = (name: string, brand: BrandType, tier: TierType) => {
     const newId = `s-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     const newSuperstar: Superstar = {
@@ -303,7 +312,7 @@ export default function App() {
       tier
     };
     setAppState((prev) => {
-      let updatedSuperstars = [...prev.superstars, newSuperstar];
+      let updatedSuperstars = sortSuperstarsAlphabetically([...prev.superstars, newSuperstar]);
       let updatedWomenTag = prev.womenTagTeams || [];
 
       if (tier === 'Women Tag Team') {
@@ -313,7 +322,7 @@ export default function App() {
           brand
         };
         if (!updatedWomenTag.some((t) => t.teamName.toLowerCase() === name.toLowerCase())) {
-          updatedWomenTag = [...updatedWomenTag, newTeam];
+          updatedWomenTag = sortWomenTagTeamsAlphabetically([...updatedWomenTag, newTeam]);
         }
       }
 
@@ -329,12 +338,19 @@ export default function App() {
     setAppState((prev) => {
       const target = prev.superstars.find((s) => s.id === id);
       const oldName = target ? target.name : '';
-      return {
-        ...prev,
-        superstars: prev.superstars.map((s) => (s.id === id ? { ...s, name } : s)),
-        womenTagTeams: (prev.womenTagTeams || []).map((t) =>
+      const updatedSuperstars = sortSuperstarsAlphabetically(
+        prev.superstars.map((s) => (s.id === id ? { ...s, name } : s))
+      );
+      const updatedWomenTag = sortWomenTagTeamsAlphabetically(
+        (prev.womenTagTeams || []).map((t) =>
           t.id === id || (oldName && t.teamName.toLowerCase() === oldName.toLowerCase()) ? { ...t, teamName: name } : t
         )
+      );
+
+      return {
+        ...prev,
+        superstars: updatedSuperstars,
+        womenTagTeams: updatedWomenTag
       };
     });
   };
@@ -357,7 +373,9 @@ export default function App() {
     setAppState((prev) => {
       const target = prev.superstars.find((s) => s.id === id);
       const oldName = target ? target.name : '';
-      let updatedSuperstars = prev.superstars.map((s) => (s.id === id ? { ...s, brand: newBrand, tier: newTier } : s));
+      let updatedSuperstars = sortSuperstarsAlphabetically(
+        prev.superstars.map((s) => (s.id === id ? { ...s, brand: newBrand, tier: newTier } : s))
+      );
       let updatedWomenTag = (prev.womenTagTeams || []).map((t) =>
         t.id === id || (oldName && t.teamName.toLowerCase() === oldName.toLowerCase()) ? { ...t, brand: newBrand } : t
       );
@@ -371,7 +389,7 @@ export default function App() {
       return {
         ...prev,
         superstars: updatedSuperstars,
-        womenTagTeams: updatedWomenTag
+        womenTagTeams: sortWomenTagTeamsAlphabetically(updatedWomenTag)
       };
     });
   };
@@ -392,8 +410,8 @@ export default function App() {
     };
     setAppState((prev) => ({
       ...prev,
-      womenTagTeams: [...(prev.womenTagTeams || []), newTeam],
-      superstars: [...prev.superstars, newSuperstar]
+      womenTagTeams: sortWomenTagTeamsAlphabetically([...(prev.womenTagTeams || []), newTeam]),
+      superstars: sortSuperstarsAlphabetically([...prev.superstars, newSuperstar])
     }));
   };
 
@@ -403,9 +421,13 @@ export default function App() {
       const oldName = target ? target.teamName : '';
       return {
         ...prev,
-        womenTagTeams: (prev.womenTagTeams || []).map((t) => (t.id === id ? { ...t, teamName } : t)),
-        superstars: prev.superstars.map((s) =>
-          s.id === id || (oldName && s.name.toLowerCase() === oldName.toLowerCase()) ? { ...s, name: teamName } : s
+        womenTagTeams: sortWomenTagTeamsAlphabetically(
+          (prev.womenTagTeams || []).map((t) => (t.id === id ? { ...t, teamName } : t))
+        ),
+        superstars: sortSuperstarsAlphabetically(
+          prev.superstars.map((s) =>
+            s.id === id || (oldName && s.name.toLowerCase() === oldName.toLowerCase()) ? { ...s, name: teamName } : s
+          )
         )
       };
     });

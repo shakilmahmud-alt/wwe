@@ -31,11 +31,13 @@ export const RosterSpreadsheet: React.FC<RosterSpreadsheetProps> = ({
   const [addingColKey, setAddingColKey] = useState<string | null>(null);
   const [newInputName, setNewInputName] = useState('');
 
-  // Helper getters for superstar columns
+  // Helper getters for superstar columns (sorted alphabetically A to Z)
   const getList = (brand: BrandType, tier: TierType) => {
-    return superstars.filter(
-      (s) => s.brand === brand && s.tier === tier && s.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    return superstars
+      .filter(
+        (s) => s.brand === brand && s.tier === tier && s.name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base', numeric: true }));
   };
 
   const rawTop = getList('RAW', 'Top');
@@ -65,7 +67,7 @@ export const RosterSpreadsheet: React.FC<RosterSpreadsheetProps> = ({
           .map((s) => ({ id: s.id, teamName: s.name, brand: s.brand }))
       ].map((item) => [item.teamName.toLowerCase(), item])
     ).values()
-  );
+  ).sort((a, b) => a.teamName.localeCompare(b.teamName, undefined, { sensitivity: 'base', numeric: true }));
 
   const filteredWomenTag = combinedWomenTagTeams.filter((t) =>
     t.teamName.toLowerCase().includes(searchTerm.toLowerCase())

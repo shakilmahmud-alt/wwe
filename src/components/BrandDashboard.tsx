@@ -76,8 +76,9 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
   const [newSuperstarName, setNewSuperstarName] = useState('');
   const [selectedTier, setSelectedTier] = useState<TierType>('Top');
 
-  // Helper to resolve tier wrestlers including women tag teams
+  // Helper to resolve tier wrestlers including women tag teams (sorted alphabetically)
   const getTierWrestlers = (tier: TierType) => {
+    let list: Superstar[] = [];
     if (tier === 'Women Tag Team') {
       const fromSuperstars = brandSuperstars.filter((s) => s.tier === 'Women Tag Team');
       const existingNames = new Set(fromSuperstars.map((s) => s.name.toLowerCase()));
@@ -100,9 +101,11 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
         }))
         .filter((wt) => !existingNames.has(wt.name.toLowerCase()));
 
-      return [...fromSuperstars, ...fromWomenTag];
+      list = [...fromSuperstars, ...fromWomenTag];
+    } else {
+      list = brandSuperstars.filter((s) => s.tier === tier);
     }
-    return brandSuperstars.filter((s) => s.tier === tier);
+    return list.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base', numeric: true }));
   };
 
   // Drag and drop reordering for active champions
