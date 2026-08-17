@@ -303,14 +303,79 @@ export default function App() {
             }
             const mergedChampionArchive = Array.from(archiveMap.values());
 
+            // Lossless Smart Merge for Superstars (Preserves all 322+ superstars!)
+            const superstarsMap = new Map<string, Superstar>();
+            const baseSuperstars = (cloudData.superstars && cloudData.superstars.length > 0) ? cloudData.superstars : (localData?.superstars || sampleFullData.superstars);
+            for (const s of baseSuperstars) {
+              superstarsMap.set(s.id, s);
+            }
+            if (localData?.superstars) {
+              for (const s of localData.superstars) {
+                if (!superstarsMap.has(s.id)) {
+                  superstarsMap.set(s.id, s);
+                }
+              }
+            }
+            const mergedSuperstars = sortSuperstarsAlphabetically(Array.from(superstarsMap.values()));
+
+            // Lossless Smart Merge for Women Tag Teams
+            const tagMap = new Map<string, WomenTagTeam>();
+            const baseTags = (cloudData.womenTagTeams && cloudData.womenTagTeams.length > 0) ? cloudData.womenTagTeams : (localData?.womenTagTeams || sampleFullData.womenTagTeams);
+            for (const t of baseTags) {
+              tagMap.set(t.id, t);
+            }
+            if (localData?.womenTagTeams) {
+              for (const t of localData.womenTagTeams) {
+                if (!tagMap.has(t.id)) {
+                  tagMap.set(t.id, t);
+                }
+              }
+            }
+            const mergedWomenTagTeams = sortWomenTagTeamsAlphabetically(Array.from(tagMap.values()));
+
+            // Lossless Smart Merge for Calendar Events
+            const eventsMap = new Map<string, CalendarEvent>();
+            const baseEvents = (cloudData.calendarEvents && cloudData.calendarEvents.length > 0) ? cloudData.calendarEvents : (localData?.calendarEvents || sampleFullData.calendarEvents);
+            for (const ev of baseEvents) {
+              eventsMap.set(ev.id, ev);
+            }
+            if (localData?.calendarEvents) {
+              for (const ev of localData.calendarEvents) {
+                const existing = eventsMap.get(ev.id);
+                if (existing) {
+                  eventsMap.set(ev.id, { ...existing, ...ev, isCompleted: existing.isCompleted || ev.isCompleted });
+                } else {
+                  eventsMap.set(ev.id, ev);
+                }
+              }
+            }
+            const mergedCalendarEvents = Array.from(eventsMap.values());
+
+            // Lossless Smart Merge for Weekly Show Plans
+            const mergeShowPlans = (cloudPlans?: ShowPlan[], localPlans?: ShowPlan[]) => {
+              const planMap = new Map<string, ShowPlan>();
+              const base = (cloudPlans && cloudPlans.length > 0) ? cloudPlans : (localPlans || []);
+              for (const p of base) planMap.set(p.id, p);
+              if (localPlans) {
+                for (const p of localPlans) if (!planMap.has(p.id)) planMap.set(p.id, p);
+              }
+              return Array.from(planMap.values());
+            };
+
             const mergedState: AppState = {
               ...cloudData,
+              superstars: mergedSuperstars,
+              womenTagTeams: mergedWomenTagTeams,
               champions: mergedChampions,
               emptyMatrix: finalEmptyMatrix,
               historyMatrix: finalHistoryMatrix,
               achievementsMen: mergedAchievementsMen,
               achievementsWomen: mergedAchievementsWomen,
               championArchive: mergedChampionArchive,
+              calendarEvents: mergedCalendarEvents,
+              rawShowPlans: mergeShowPlans(cloudData.rawShowPlans, localData?.rawShowPlans),
+              sdShowPlans: mergeShowPlans(cloudData.sdShowPlans, localData?.sdShowPlans),
+              nxtShowPlans: mergeShowPlans(cloudData.nxtShowPlans, localData?.nxtShowPlans),
               customMatrices: (localData?.customMatrices && localData.customMatrices.length > 0) ? localData.customMatrices : (cloudData.customMatrices || []),
               ppvTimelines: (localData?.ppvTimelines && localData.ppvTimelines.length > 0) ? localData.ppvTimelines : (cloudData.ppvTimelines || []),
               matrixColumns: (localData?.matrixColumns && localData.matrixColumns.length > 0) ? localData.matrixColumns : (cloudData.matrixColumns || sampleFullData.matrixColumns)
