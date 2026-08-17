@@ -176,7 +176,25 @@ export default function App() {
             const savedLocal = localStorage.getItem(STORAGE_KEY);
             const localData = savedLocal ? JSON.parse(savedLocal) : null;
 
-            // Merge local matrix, timeline, and champion image edits with cloud data so local updates are never lost
+            // Helper to check if a matrix contains actual user-filled text data
+            const isMatrixFilled = (matrix?: HistoryMatrixRow[]): boolean => {
+              if (!matrix || matrix.length === 0) return false;
+              return matrix.some((row) => row.champions && Object.keys(row.champions).some((key) => row.champions[key] && row.champions[key].trim() !== ''));
+            };
+
+            // Smart merge matrix data: prefer filled matrix (whether local or cloud) over empty blank arrays
+            const finalEmptyMatrix = isMatrixFilled(localData?.emptyMatrix)
+              ? localData.emptyMatrix
+              : isMatrixFilled(cloudData?.emptyMatrix)
+              ? cloudData.emptyMatrix
+              : (localData?.emptyMatrix || cloudData?.emptyMatrix || sampleFullData.emptyMatrix);
+
+            const finalHistoryMatrix = isMatrixFilled(localData?.historyMatrix)
+              ? localData.historyMatrix
+              : isMatrixFilled(cloudData?.historyMatrix)
+              ? cloudData.historyMatrix
+              : (localData?.historyMatrix || cloudData?.historyMatrix || sampleFullData.historyMatrix);
+
             const baseChamps = (cloudData.champions && cloudData.champions.length > 0) ? cloudData.champions : sampleFullData.champions;
             const mergedChampions = baseChamps.map((cloudChamp: ChampionEntry) => {
               const localChamp = localData?.champions?.find((lc: ChampionEntry) => lc.id === cloudChamp.id || lc.titleName === cloudChamp.titleName);
@@ -190,8 +208,8 @@ export default function App() {
             const mergedState: AppState = {
               ...cloudData,
               champions: mergedChampions,
-              emptyMatrix: (localData?.emptyMatrix && localData.emptyMatrix.length > 0) ? localData.emptyMatrix : (cloudData.emptyMatrix || sampleFullData.emptyMatrix),
-              historyMatrix: (localData?.historyMatrix && localData.historyMatrix.length > 0) ? localData.historyMatrix : (cloudData.historyMatrix || sampleFullData.historyMatrix),
+              emptyMatrix: finalEmptyMatrix,
+              historyMatrix: finalHistoryMatrix,
               customMatrices: (localData?.customMatrices && localData.customMatrices.length > 0) ? localData.customMatrices : (cloudData.customMatrices || []),
               ppvTimelines: (localData?.ppvTimelines && localData.ppvTimelines.length > 0) ? localData.ppvTimelines : (cloudData.ppvTimelines || []),
               matrixColumns: (localData?.matrixColumns && localData.matrixColumns.length > 0) ? localData.matrixColumns : (cloudData.matrixColumns || sampleFullData.matrixColumns),
