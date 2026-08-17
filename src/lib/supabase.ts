@@ -108,39 +108,67 @@ export async function saveToSupabase(data: AppState): Promise<{ success: boolean
         }
 
         if (Array.isArray(data.achievementsMen) && data.achievementsMen.length > 0) {
-          const formattedMen = data.achievementsMen.map((am) => ({
-            id: am.id,
-            superstar_name: am.superstarName,
-            brand: am.brand || 'Joint',
-            univ_undisputed: am.univUndisputed || false,
-            world_hw: am.worldHw || false,
-            ic: am.ic || false,
-            us: am.us || false,
-            tag_team: am.tagTeam || false,
-            cruiserweight: am.cruiserweight || false,
-            nxt: am.nxt || false,
-            uk: am.uk || false,
-            north_american: am.northAmerican || false,
-            grand_slam_order: am.grandSlamOrder || null,
-            notes: am.notes || null
-          }));
+          const formattedMen = data.achievementsMen.map((am) => {
+            const rr = am.royalRumbleCount ?? (am.royalRumble ? 1 : 0);
+            const mb = am.mitbCount ?? (am.mitb ? 1 : 0);
+            return {
+              id: am.id,
+              superstar_name: am.superstarName,
+              brand: am.brand || 'Joint',
+              univ_undisputed: am.univUndisputed || false,
+              world_hw: am.worldHw || false,
+              ic: am.ic || false,
+              us: am.us || false,
+              tag_team: am.tagTeam || false,
+              cruiserweight: am.cruiserweight || false,
+              nxt: am.nxt || false,
+              uk: am.uk || false,
+              north_american: am.northAmerican || false,
+              royal_rumble_count: rr,
+              mitb_count: mb,
+              chamber_count: am.chamberCount || 0,
+              grand_slam_order: am.grandSlamOrder || null,
+              notes: am.notes || null
+            };
+          });
           await supabase.from('achievements_men').upsert(formattedMen, { onConflict: 'id' });
         }
 
         if (Array.isArray(data.achievementsWomen) && data.achievementsWomen.length > 0) {
-          const formattedWomen = data.achievementsWomen.map((aw) => ({
-            id: aw.id,
-            superstar_name: aw.superstarName,
-            brand: aw.brand || 'Joint',
-            royal_rumble_count: aw.royalRumbleCount || 0,
-            mitb_count: aw.mitbCount || 0,
-            chamber_count: aw.chamberCount || 0,
-            grand_slam: aw.grandSlam || false,
-            rivalry_of_year_count: aw.rivalryOfYearCount || 0,
-            title_reigns_count: aw.titleReignsCount || 0,
-            notes: aw.notes || null
-          }));
+          const formattedWomen = data.achievementsWomen.map((aw) => {
+            const rr = aw.royalRumbleCount ?? (aw.royalRumble ? 1 : 0);
+            const mb = aw.mitbCount ?? (aw.mitb ? 1 : 0);
+            return {
+              id: aw.id,
+              superstar_name: aw.superstarName,
+              brand: aw.brand || 'Joint',
+              royal_rumble_count: rr,
+              mitb_count: mb,
+              chamber_count: aw.chamberCount || 0,
+              grand_slam: aw.grandSlam || false,
+              rivalry_of_year_count: aw.rivalryOfYearCount || 0,
+              title_reigns_count: aw.titleReignsCount || 0,
+              notes: aw.notes || null
+            };
+          });
           await supabase.from('achievements_women').upsert(formattedWomen, { onConflict: 'id' });
+        }
+
+        if (Array.isArray(data.championArchive) && data.championArchive.length > 0) {
+          const formattedArchive = data.championArchive.map((ca) => ({
+            id: ca.id,
+            title_name: ca.titleName,
+            brand: ca.brand,
+            current_champion: ca.currentChampion,
+            days_held: ca.daysHeld || 0,
+            defenses: ca.defenses || 0,
+            previous_champion: ca.previousChampion || null,
+            acquired_date: ca.acquiredDate || null,
+            wrestler_image: ca.wrestlerImage || null,
+            belt_image: ca.beltImage || null,
+            notes: ca.notes || null
+          }));
+          await supabase.from('champion_archive').upsert(formattedArchive, { onConflict: 'id' });
         }
       } catch (secErr) {
         console.warn('Background relational sync notice:', secErr);
@@ -167,7 +195,6 @@ export async function loadFromSupabase(): Promise<{ success: boolean; data?: App
     let state: AppState | null = mainRow && mainRow.data ? (mainRow.data as AppState) : null;
     
     // If we successfully loaded the full JSON state, return it immediately!
-    // This prevents the incomplete relational tables from overwriting rich data like 'royalRumble' and 'mitb' checkboxes.
     if (state) {
       return { success: true, data: state };
     }
@@ -196,7 +223,8 @@ export async function loadFromSupabase(): Promise<{ success: boolean; data?: App
           rivalries: [],
           rawShowPlans: [],
           sdShowPlans: [],
-          nxtShowPlans: []
+          nxtShowPlans: [],
+          championArchive: []
         };
       } else {
         state.superstars = mappedSuperstars;
@@ -268,37 +296,69 @@ export async function loadFromSupabase(): Promise<{ success: boolean; data?: App
       // 7. Load from relational 'achievements_men' table if populated
       const { data: amRows, error: amLoadError } = await supabase.from('achievements_men').select('*');
       if (amRows && amRows.length > 0 && !amLoadError) {
-        state.achievementsMen = amRows.map((r: any) => ({
-          id: r.id,
-          superstarName: r.superstar_name || r.superstarName,
-          brand: (r.brand || 'Joint') as any,
-          univUndisputed: r.univ_undisputed || r.univUndisputed || false,
-          worldHw: r.world_hw || r.worldHw || false,
-          ic: r.ic || false,
-          us: r.us || false,
-          tagTeam: r.tag_team || r.tagTeam || false,
-          cruiserweight: r.cruiserweight || false,
-          nxt: r.nxt || false,
-          uk: r.uk || false,
-          northAmerican: r.north_american || r.northAmerican || false,
-          grandSlamOrder: r.grand_slam_order || r.grandSlamOrder || undefined,
-          notes: r.notes || undefined
-        }));
+        state.achievementsMen = amRows.map((r: any) => {
+          const rr = r.royal_rumble_count ?? r.royalRumbleCount ?? (r.royal_rumble || r.royalRumble ? 1 : 0);
+          const mb = r.mitb_count ?? r.mitbCount ?? (r.mitb ? 1 : 0);
+          return {
+            id: r.id,
+            superstarName: r.superstar_name || r.superstarName,
+            brand: (r.brand || 'Joint') as any,
+            univUndisputed: r.univ_undisputed || r.univUndisputed || false,
+            worldHw: r.world_hw || r.worldHw || false,
+            ic: r.ic || false,
+            us: r.us || false,
+            tagTeam: r.tag_team || r.tagTeam || false,
+            cruiserweight: r.cruiserweight || false,
+            nxt: r.nxt || false,
+            uk: r.uk || false,
+            northAmerican: r.north_american || r.northAmerican || false,
+            royalRumbleCount: rr,
+            mitbCount: mb,
+            royalRumble: rr > 0,
+            mitb: mb > 0,
+            grandSlamOrder: r.grand_slam_order || r.grandSlamOrder || undefined,
+            notes: r.notes || undefined
+          };
+        });
       }
 
       // 8. Load from relational 'achievements_women' table if populated
       const { data: awRows, error: awLoadError } = await supabase.from('achievements_women').select('*');
       if (awRows && awRows.length > 0 && !awLoadError) {
-        state.achievementsWomen = awRows.map((r: any) => ({
+        state.achievementsWomen = awRows.map((r: any) => {
+          const rr = r.royal_rumble_count ?? r.royalRumbleCount ?? (r.royal_rumble || r.royalRumble ? 1 : 0);
+          const mb = r.mitb_count ?? r.mitbCount ?? (r.mitb ? 1 : 0);
+          return {
+            id: r.id,
+            superstarName: r.superstar_name || r.superstarName,
+            brand: (r.brand || 'Joint') as any,
+            royalRumbleCount: rr,
+            mitbCount: mb,
+            royalRumble: rr > 0,
+            mitb: mb > 0,
+            chamberCount: r.chamber_count || r.chamberCount || 0,
+            grandSlam: r.grand_slam || r.grandSlam || false,
+            rivalryOfYearCount: r.rivalry_of_year_count || r.rivalryOfYearCount || 0,
+            titleReignsCount: r.title_reigns_count || r.titleReignsCount || 0,
+            notes: r.notes || undefined
+          };
+        });
+      }
+
+      // 9. Load from relational 'champion_archive' table if populated
+      const { data: caRows } = await supabase.from('champion_archive').select('*');
+      if (caRows && caRows.length > 0) {
+        state.championArchive = caRows.map((r: any) => ({
           id: r.id,
-          superstarName: r.superstar_name || r.superstarName,
-          brand: (r.brand || 'Joint') as any,
-          royalRumbleCount: r.royal_rumble_count || r.royalRumbleCount || 0,
-          mitbCount: r.mitb_count || r.mitbCount || 0,
-          chamberCount: r.chamber_count || r.chamberCount || 0,
-          grandSlam: r.grand_slam || r.grandSlam || false,
-          rivalryOfYearCount: r.rivalry_of_year_count || r.rivalryOfYearCount || 0,
-          titleReignsCount: r.title_reigns_count || r.titleReignsCount || 0,
+          titleName: r.title_name || r.titleName,
+          brand: r.brand,
+          currentChampion: r.current_champion || r.currentChampion,
+          daysHeld: r.days_held || r.daysHeld || 0,
+          defenses: r.defenses || 0,
+          previousChampion: r.previous_champion || r.previousChampion || undefined,
+          acquiredDate: r.acquired_date || r.acquiredDate || undefined,
+          wrestlerImage: r.wrestler_image || r.wrestlerImage || undefined,
+          beltImage: r.belt_image || r.beltImage || undefined,
           notes: r.notes || undefined
         }));
       }

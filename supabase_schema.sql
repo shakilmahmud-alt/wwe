@@ -110,6 +110,59 @@ CREATE TABLE IF NOT EXISTS public.show_plans (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 8. Achievements Men Table
+CREATE TABLE IF NOT EXISTS public.achievements_men (
+    id TEXT PRIMARY KEY,
+    superstar_name TEXT NOT NULL,
+    brand TEXT DEFAULT 'Joint',
+    univ_undisputed BOOLEAN DEFAULT FALSE,
+    world_hw BOOLEAN DEFAULT FALSE,
+    ic BOOLEAN DEFAULT FALSE,
+    us BOOLEAN DEFAULT FALSE,
+    tag_team BOOLEAN DEFAULT FALSE,
+    cruiserweight BOOLEAN DEFAULT FALSE,
+    nxt BOOLEAN DEFAULT FALSE,
+    uk BOOLEAN DEFAULT FALSE,
+    north_american BOOLEAN DEFAULT FALSE,
+    royal_rumble_count INTEGER DEFAULT 0,
+    mitb_count INTEGER DEFAULT 0,
+    chamber_count INTEGER DEFAULT 0,
+    grand_slam_order INTEGER,
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 9. Achievements Women Table
+CREATE TABLE IF NOT EXISTS public.achievements_women (
+    id TEXT PRIMARY KEY,
+    superstar_name TEXT NOT NULL,
+    brand TEXT DEFAULT 'Joint',
+    royal_rumble_count INTEGER DEFAULT 0,
+    mitb_count INTEGER DEFAULT 0,
+    chamber_count INTEGER DEFAULT 0,
+    grand_slam BOOLEAN DEFAULT FALSE,
+    rivalry_of_year_count INTEGER DEFAULT 0,
+    title_reigns_count INTEGER DEFAULT 0,
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 10. Champion Archive Table
+CREATE TABLE IF NOT EXISTS public.champion_archive (
+    id TEXT PRIMARY KEY,
+    title_name TEXT NOT NULL,
+    brand TEXT NOT NULL,
+    current_champion TEXT NOT NULL,
+    days_held INTEGER DEFAULT 0,
+    defenses INTEGER DEFAULT 0,
+    previous_champion TEXT,
+    acquired_date TEXT,
+    wrestler_image TEXT,
+    belt_image TEXT,
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Enable Row Level Security (RLS)
 ALTER TABLE public.wwe_universe_data ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.superstars ENABLE ROW LEVEL SECURITY;
@@ -119,6 +172,9 @@ ALTER TABLE public.championships ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.calendar_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.rivalries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.show_plans ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.achievements_men ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.achievements_women ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.champion_archive ENABLE ROW LEVEL SECURITY;
 
 -- Create Permissive RLS Policies for Anon access
 DO $$ 
@@ -131,6 +187,9 @@ BEGIN
     EXECUTE 'CREATE POLICY "Allow anon all on calendar_events" ON public.calendar_events FOR ALL USING (true) WITH CHECK (true)';
     EXECUTE 'CREATE POLICY "Allow anon all on rivalries" ON public.rivalries FOR ALL USING (true) WITH CHECK (true)';
     EXECUTE 'CREATE POLICY "Allow anon all on show_plans" ON public.show_plans FOR ALL USING (true) WITH CHECK (true)';
+    EXECUTE 'CREATE POLICY "Allow anon all on achievements_men" ON public.achievements_men FOR ALL USING (true) WITH CHECK (true)';
+    EXECUTE 'CREATE POLICY "Allow anon all on achievements_women" ON public.achievements_women FOR ALL USING (true) WITH CHECK (true)';
+    EXECUTE 'CREATE POLICY "Allow anon all on champion_archive" ON public.champion_archive FOR ALL USING (true) WITH CHECK (true)';
 EXCEPTION
     WHEN OTHERS THEN NULL;
 END $$;

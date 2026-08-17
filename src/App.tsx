@@ -205,15 +205,115 @@ export default function App() {
               };
             });
 
+            // Lossless Smart Merge for Achievement Men (Preserves Royal Rumble & MITB counters!)
+            const getRRCountMen = (a?: AchievementMale) => a?.royalRumbleCount ?? (a?.royalRumble ? 1 : 0);
+            const getMITBCountMen = (a?: AchievementMale) => a?.mitbCount ?? (a?.mitb ? 1 : 0);
+            const baseMen = (cloudData.achievementsMen && cloudData.achievementsMen.length > 0) ? cloudData.achievementsMen : (localData?.achievementsMen || sampleFullData.achievementsMen);
+            const menMap = new Map<string, AchievementMale>();
+            for (const item of baseMen) {
+              menMap.set((item.id || item.superstarName).toLowerCase(), { ...item });
+            }
+            if (localData?.achievementsMen) {
+              for (const localItem of localData.achievementsMen) {
+                const key = (localItem.id || localItem.superstarName).toLowerCase();
+                const existing = menMap.get(key);
+                if (existing) {
+                  const rr = Math.max(getRRCountMen(existing), getRRCountMen(localItem));
+                  const mb = Math.max(getMITBCountMen(existing), getMITBCountMen(localItem));
+                  menMap.set(key, {
+                    ...existing,
+                    ...localItem,
+                    royalRumbleCount: rr,
+                    mitbCount: mb,
+                    royalRumble: rr > 0,
+                    mitb: mb > 0,
+                    univUndisputed: existing.univUndisputed || localItem.univUndisputed,
+                    worldHw: existing.worldHw || localItem.worldHw,
+                    ic: existing.ic || localItem.ic,
+                    us: existing.us || localItem.us,
+                    tagTeam: existing.tagTeam || localItem.tagTeam,
+                    cruiserweight: existing.cruiserweight || localItem.cruiserweight,
+                    nxt: existing.nxt || localItem.nxt,
+                    uk: existing.uk || localItem.uk,
+                    northAmerican: existing.northAmerican || localItem.northAmerican,
+                    notes: localItem.notes || existing.notes
+                  });
+                } else {
+                  menMap.set(key, { ...localItem });
+                }
+              }
+            }
+            const mergedAchievementsMen = Array.from(menMap.values());
+
+            // Lossless Smart Merge for Achievement Women (Preserves Royal Rumble & MITB counters!)
+            const getRRCountWomen = (a?: AchievementFemale) => a?.royalRumbleCount ?? (a?.royalRumble ? 1 : 0);
+            const getMITBCountWomen = (a?: AchievementFemale) => a?.mitbCount ?? (a?.mitb ? 1 : 0);
+            const baseWomen = (cloudData.achievementsWomen && cloudData.achievementsWomen.length > 0) ? cloudData.achievementsWomen : (localData?.achievementsWomen || sampleFullData.achievementsWomen);
+            const womenMap = new Map<string, AchievementFemale>();
+            for (const item of baseWomen) {
+              womenMap.set((item.id || item.superstarName).toLowerCase(), { ...item });
+            }
+            if (localData?.achievementsWomen) {
+              for (const localItem of localData.achievementsWomen) {
+                const key = (localItem.id || localItem.superstarName).toLowerCase();
+                const existing = womenMap.get(key);
+                if (existing) {
+                  const rr = Math.max(getRRCountWomen(existing), getRRCountWomen(localItem));
+                  const mb = Math.max(getMITBCountWomen(existing), getMITBCountWomen(localItem));
+                  womenMap.set(key, {
+                    ...existing,
+                    ...localItem,
+                    royalRumbleCount: rr,
+                    mitbCount: mb,
+                    royalRumble: rr > 0,
+                    mitb: mb > 0,
+                    rawWomen: existing.rawWomen || localItem.rawWomen,
+                    sdWomen: existing.sdWomen || localItem.sdWomen,
+                    nxt: existing.nxt || localItem.nxt,
+                    womenTag: existing.womenTag || localItem.womenTag,
+                    nxtTag: existing.nxtTag || localItem.nxtTag,
+                    nxtUk: existing.nxtUk || localItem.nxtUk,
+                    nxtNa: existing.nxtNa || localItem.nxtNa,
+                    ic: existing.ic || localItem.ic,
+                    us: existing.us || localItem.us,
+                    notes: localItem.notes || existing.notes
+                  });
+                } else {
+                  womenMap.set(key, { ...localItem });
+                }
+              }
+            }
+            const mergedAchievementsWomen = Array.from(womenMap.values());
+
+            // Lossless Smart Merge for Champion Archive
+            const archiveMap = new Map<string, ArchiveEntry>();
+            const baseArchive = (cloudData.championArchive && cloudData.championArchive.length > 0) ? cloudData.championArchive : (localData?.championArchive || sampleFullData.championArchive);
+            for (const item of baseArchive) {
+              archiveMap.set(item.id, { ...item });
+            }
+            if (localData?.championArchive) {
+              for (const localItem of localData.championArchive) {
+                const existing = archiveMap.get(localItem.id);
+                if (existing) {
+                  archiveMap.set(localItem.id, { ...existing, ...localItem });
+                } else {
+                  archiveMap.set(localItem.id, { ...localItem });
+                }
+              }
+            }
+            const mergedChampionArchive = Array.from(archiveMap.values());
+
             const mergedState: AppState = {
               ...cloudData,
               champions: mergedChampions,
               emptyMatrix: finalEmptyMatrix,
               historyMatrix: finalHistoryMatrix,
+              achievementsMen: mergedAchievementsMen,
+              achievementsWomen: mergedAchievementsWomen,
+              championArchive: mergedChampionArchive,
               customMatrices: (localData?.customMatrices && localData.customMatrices.length > 0) ? localData.customMatrices : (cloudData.customMatrices || []),
               ppvTimelines: (localData?.ppvTimelines && localData.ppvTimelines.length > 0) ? localData.ppvTimelines : (cloudData.ppvTimelines || []),
-              matrixColumns: (localData?.matrixColumns && localData.matrixColumns.length > 0) ? localData.matrixColumns : (cloudData.matrixColumns || sampleFullData.matrixColumns),
-              championArchive: (localData?.championArchive && localData.championArchive.length > 0) ? localData.championArchive : (cloudData.championArchive || sampleFullData.championArchive)
+              matrixColumns: (localData?.matrixColumns && localData.matrixColumns.length > 0) ? localData.matrixColumns : (cloudData.matrixColumns || sampleFullData.matrixColumns)
             };
 
             setAppState(mergedState);
