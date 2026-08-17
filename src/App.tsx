@@ -176,9 +176,20 @@ export default function App() {
             const savedLocal = localStorage.getItem(STORAGE_KEY);
             const localData = savedLocal ? JSON.parse(savedLocal) : null;
 
-            // Merge local matrix & timeline edits with cloud data so local updates are never lost
+            // Merge local matrix, timeline, and champion image edits with cloud data so local updates are never lost
+            const baseChamps = (cloudData.champions && cloudData.champions.length > 0) ? cloudData.champions : sampleFullData.champions;
+            const mergedChampions = baseChamps.map((cloudChamp: ChampionEntry) => {
+              const localChamp = localData?.champions?.find((lc: ChampionEntry) => lc.id === cloudChamp.id || lc.titleName === cloudChamp.titleName);
+              return {
+                ...cloudChamp,
+                wrestlerImage: localChamp?.wrestlerImage || cloudChamp.wrestlerImage,
+                beltImage: localChamp?.beltImage || cloudChamp.beltImage
+              };
+            });
+
             const mergedState: AppState = {
               ...cloudData,
+              champions: mergedChampions,
               emptyMatrix: (localData?.emptyMatrix && localData.emptyMatrix.length > 0) ? localData.emptyMatrix : (cloudData.emptyMatrix || sampleFullData.emptyMatrix),
               historyMatrix: (localData?.historyMatrix && localData.historyMatrix.length > 0) ? localData.historyMatrix : (cloudData.historyMatrix || sampleFullData.historyMatrix),
               customMatrices: (localData?.customMatrices && localData.customMatrices.length > 0) ? localData.customMatrices : (cloudData.customMatrices || []),

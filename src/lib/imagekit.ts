@@ -1,8 +1,16 @@
 // ImageKit.io Ultra-Fast Direct Cloud Upload Utility
+const getEnv = (key: string) => {
+  try {
+    return (typeof import.meta !== 'undefined' && (import.meta as any).env ? (import.meta as any).env[key] : process.env[key]);
+  } catch {
+    return process.env[key];
+  }
+};
+
 export const IMAGEKIT_CONFIG = {
-  publicKey: 'public_4xJrmuozjePE+d6nOK8b0ZWegWw=',
-  privateKey: 'private_xd0dqMmEyjl/tOb+3PeP5R4Ylag=',
-  urlEndpoint: 'https://ik.imagekit.io/eg7u6xcn0u'
+  publicKey: getEnv('VITE_IMAGEKIT_PUBLIC_KEY') || 'public_4xJrmuozjePE+d6nOK8b0ZWegWw=',
+  privateKey: getEnv('VITE_IMAGEKIT_PRIVATE_KEY') || 'private_xd0dqMmEyjl/tOb+3PeP5R4Ylag=',
+  urlEndpoint: getEnv('VITE_IMAGEKIT_URL_ENDPOINT') || 'https://ik.imagekit.io/eg7u6xcn0u'
 };
 
 /**
