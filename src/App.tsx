@@ -15,7 +15,7 @@ import {
   ShowPlan
 } from './types';
 import { initialEmptyState, sampleFullData } from './data/sampleRoster';
-import { calculateChampionsReign, UNIVERSE_MONTH_ORDER } from './utils/universeTime';
+import { UNIVERSE_MONTH_ORDER } from './utils/universeTime';
 import { saveToSupabase, loadFromSupabase, checkSupabaseConnection, SUPABASE_TABLE_NAME } from './lib/supabase';
 import { HeaderNav } from './components/HeaderNav';
 import { RosterSpreadsheet } from './components/RosterSpreadsheet';
@@ -101,17 +101,6 @@ export default function App() {
     }
     return initialEmptyState;
   });
-
-  const calculatedChampions = React.useMemo(() => {
-    const currentUniverseTime = appState.universeTime || { year: 2, month: 'May', week: 'Day 14 (PLE / W3 - 14d)' };
-    return calculateChampionsReign(
-      appState.champions,
-      appState.historyMatrix || [],
-      appState.emptyMatrix || [],
-      appState.calendarEvents || [],
-      currentUniverseTime
-    );
-  }, [appState.champions, appState.historyMatrix, appState.emptyMatrix, appState.calendarEvents, appState.universeTime]);
 
   const isHydratedRef = useRef(false);
   const [isCloudSyncing, setIsCloudSyncing] = useState(false);

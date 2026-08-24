@@ -538,12 +538,13 @@ export const BrandDashboard: React.FC<BrandDashboardProps> = ({
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[10px] text-slate-400 mb-1 font-semibold uppercase">Days Held (Manual)</label>
+                  <label className="block text-[10px] text-slate-400 mb-1 font-semibold uppercase">Reign Days (Days Held)</label>
                   <input
                     type="number"
                     min="0"
                     value={champDaysHeld}
                     onChange={(e) => setChampDaysHeld(parseInt(e.target.value) || 0)}
+                    placeholder="Enter days held..."
                     className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-white focus:border-amber-500 outline-none font-bold text-amber-400"
                   />
                 </div>
