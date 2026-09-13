@@ -22,6 +22,8 @@ interface SummaryViewProps {
   onDeletePPVTimeline?: (timelineId: string) => void;
 }
 
+const CALENDAR_MINIMIZED_STORAGE_KEY = 'wwe2k26_calendar_minimized_v1';
+
 export const SummaryView: React.FC<SummaryViewProps> = ({
   appState,
   onLoadSampleData,
@@ -37,10 +39,49 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
   onDeletePPVTimeline
 }) => {
   const [matrixBrand, setMatrixBrand] = useState<'All' | 'RAW' | 'SmackDown' | 'NXT'>('All');
-  const [minimized, setMinimized] = useState<Record<string, boolean>>({});
+  
+  // Persistent minimized state across tab changes and page reloads
+  const [minimized, setMinimized] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem(CALENDAR_MINIMIZED_STORAGE_KEY);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.warn('Failed to parse calendar minimized state from localStorage:', e);
+    }
+    return {};
+  });
 
   const toggleMinimize = (key: string) => {
-    setMinimized(prev => ({ ...prev, [key]: !prev[key] }));
+    setMinimized(prev => {
+      const next = { ...prev, [key]: !prev[key] };
+      try {
+        localStorage.setItem(CALENDAR_MINIMIZED_STORAGE_KEY, JSON.stringify(next));
+      } catch (e) {
+        console.warn('Failed to save calendar minimized state to localStorage:', e);
+      }
+      return next;
+    });
+  };
+
+  const handleToggleAllMinimize = (shouldMinimize: boolean) => {
+    const allKeys = [
+      'historyMatrix',
+      'emptyMatrix',
+      ...(appState.customMatrices || []).map(cm => cm.id),
+      ...(appState.ppvTimelines || []).map(tl => tl.id)
+    ];
+    const nextState: Record<string, boolean> = {};
+    allKeys.forEach(k => {
+      nextState[k] = shouldMinimize;
+    });
+    setMinimized(nextState);
+    try {
+      localStorage.setItem(CALENDAR_MINIMIZED_STORAGE_KEY, JSON.stringify(nextState));
+    } catch (e) {
+      console.warn('Failed to save calendar minimized state to localStorage:', e);
+    }
   };
 
   const [showAddColModal, setShowAddColModal] = useState(false);
@@ -205,6 +246,22 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
 
         {/* Action Controls */}
         <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs mr-1">
+            <button
+              onClick={() => handleToggleAllMinimize(true)}
+              className="px-2.5 py-1 text-xs font-bold rounded text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center gap-1"
+              title="Minimize all year spreadsheets and timelines"
+            >
+              <ChevronDown className="w-3.5 h-3.5" /> Collapse All
+            </button>
+            <button
+              onClick={() => handleToggleAllMinimize(false)}
+              className="px-2.5 py-1 text-xs font-bold rounded text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center gap-1"
+              title="Expand all year spreadsheets and timelines"
+            >
+              <ChevronUp className="w-3.5 h-3.5" /> Expand All
+            </button>
+          </div>
           <button
             onClick={() => {
               if (onAddPPVTimeline) {
@@ -257,12 +314,17 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                 className="p-1.5 hover:bg-slate-800 rounded-md transition text-slate-400 hover:text-white"
                 title={minimized[matrix.key] ? "Expand Spreadsheet" : "Minimize Spreadsheet"}
               >
-                {minimized[matrix.key] ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
+                {minimized[matrix.key] ? <ChevronDown className="w-5 h-5 text-yellow-400" /> : <ChevronUp className="w-5 h-5" />}
               </button>
-              <div>
+              <div onClick={() => toggleMinimize(matrix.key)} className="cursor-pointer select-none">
                 <h2 className="text-lg font-black uppercase text-yellow-400 flex items-center gap-2">
                   <Award className="w-5 h-5 text-yellow-400" />
                   {matrix.title}
+                  {minimized[matrix.key] && (
+                    <span className="text-[10px] normal-case bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 px-2 py-0.5 rounded-full font-bold">
+                      Minimized
+                    </span>
+                  )}
                 </h2>
                 <p className="text-xs text-slate-400">
                   {matrix.description}
@@ -438,12 +500,17 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                 className="p-1.5 hover:bg-slate-800 rounded-md transition text-slate-400 hover:text-white"
                 title={minimized[timeline.id] ? "Expand Timeline" : "Minimize Timeline"}
               >
-                {minimized[timeline.id] ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
+                {minimized[timeline.id] ? <ChevronDown className="w-5 h-5 text-purple-400" /> : <ChevronUp className="w-5 h-5" />}
               </button>
-              <div>
+              <div onClick={() => toggleMinimize(timeline.id)} className="cursor-pointer select-none">
                 <h2 className="text-lg font-black uppercase text-purple-400 flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-purple-400" />
                   {timeline.title}
+                  {minimized[timeline.id] && (
+                    <span className="text-[10px] normal-case bg-purple-500/20 text-purple-300 border border-purple-500/40 px-2 py-0.5 rounded-full font-bold">
+                      Minimized
+                    </span>
+                  )}
                 </h2>
                 <p className="text-xs text-slate-400">
                   Custom PPV Schedule & Days Count Timeline (RAW & SmackDown vs NXT)
