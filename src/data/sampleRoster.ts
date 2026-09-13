@@ -9,9 +9,36 @@ import {
   ShowPlan,
   AppState,
   HistoryMatrixRow,
-  MatrixColumn
+  MatrixColumn,
+  ArchiveColumn
 } from '../types';
 import { initialArchiveData } from './archiveData';
+
+export const defaultArchiveColumns: ArchiveColumn[] = [
+  // RAW
+  { id: 'col-raw-whc', brand: 'RAW', titleName: 'WWE/World Heavyweight' },
+  { id: 'col-raw-ic', brand: 'RAW', titleName: 'Intercontinental (3)' },
+  { id: 'col-raw-tag', brand: 'RAW', titleName: 'RAW/World Tag Team (7)' },
+  { id: 'col-raw-wwc', brand: 'RAW', titleName: "RAW Women's/Women's World" },
+  { id: 'col-raw-wic', brand: 'RAW', titleName: "Women's Intercontinental" },
+
+  // SmackDown
+  { id: 'col-sd-und', brand: 'SmackDown', titleName: 'Universal/Undisputed WWE Championship' },
+  { id: 'col-sd-us', brand: 'SmackDown', titleName: 'United States (3)' },
+  { id: 'col-sd-tag', brand: 'SmackDown', titleName: 'SD/WWE Tag Team (7)' },
+  { id: 'col-sd-wwc', brand: 'SmackDown', titleName: "SD/WWE Women's" },
+  { id: 'col-sd-wus', brand: 'SmackDown', titleName: "Women's US" },
+
+  // NXT
+  { id: 'col-nxt-nxt', brand: 'NXT', titleName: 'NXT (5)' },
+  { id: 'col-nxt-na', brand: 'NXT', titleName: 'North American (3)' },
+  { id: 'col-nxt-tag', brand: 'NXT', titleName: 'Tag Team (7)' },
+  { id: 'col-nxt-wnxt', brand: 'NXT', titleName: "NXT Women's" },
+  { id: 'col-nxt-wna', brand: 'NXT', titleName: "Women's NXT NA" },
+
+  // Joint
+  { id: 'col-joint-wtag', brand: 'Joint', titleName: "Women's Tag Team" }
+];
 
 export const initialEmptyState: AppState = {
   superstars: [],
@@ -20,6 +47,7 @@ export const initialEmptyState: AppState = {
   achievementsWomen: [],
   calendarEvents: [],
   championArchive: [],
+  archiveColumns: defaultArchiveColumns,
   champions: [],
   rivalries: [],
   rawShowPlans: [],
@@ -1137,5 +1165,6 @@ export const sampleFullData: AppState = {
   matrixColumns: INITIAL_MATRIX_COLUMNS,
   emptyMatrix: INITIAL_EMPTY_MATRIX,
   championArchive: initialArchiveData,
+  archiveColumns: defaultArchiveColumns,
   universeTime: { year: 2, month: 'May', week: 'Day 14 (PLE / W3 - 14d)' }
 };

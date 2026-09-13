@@ -128,6 +128,12 @@ export interface ChampionEntry {
   wrestlerImage?: string;
 }
 
+export interface ArchiveColumn {
+  id: string;
+  brand: 'RAW' | 'SmackDown' | 'NXT' | 'Joint';
+  titleName: string;
+}
+
 export interface ArchiveEntry {
   id: string;
   brand: 'RAW' | 'SmackDown' | 'NXT' | 'Joint';
@@ -222,6 +228,7 @@ export interface AppState {
   calendarEvents: CalendarEvent[];
   champions: ChampionEntry[];
   championArchive?: ArchiveEntry[];
+  archiveColumns?: ArchiveColumn[];
   rivalries: RivalryEntry[];
   rawShowPlans: ShowPlan[];
   sdShowPlans: ShowPlan[];

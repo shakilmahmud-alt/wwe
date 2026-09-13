@@ -11,10 +11,11 @@ import {
   CalendarEvent,
   ChampionEntry,
   ArchiveEntry,
+  ArchiveColumn,
   RivalryEntry,
   ShowPlan
 } from './types';
-import { initialEmptyState, sampleFullData } from './data/sampleRoster';
+import { initialEmptyState, sampleFullData, defaultArchiveColumns } from './data/sampleRoster';
 import { UNIVERSE_MONTH_ORDER } from './utils/universeTime';
 import { saveToSupabase, loadFromSupabase, checkSupabaseConnection, SUPABASE_TABLE_NAME } from './lib/supabase';
 import { HeaderNav } from './components/HeaderNav';
@@ -94,6 +95,9 @@ export default function App() {
         if (!parsed.championArchive || parsed.championArchive.length === 0) {
           parsed.championArchive = sampleFullData.championArchive;
         }
+        if (!parsed.archiveColumns || parsed.archiveColumns.length === 0) {
+          parsed.archiveColumns = sampleFullData.archiveColumns || defaultArchiveColumns;
+        }
         return parsed;
       }
     } catch (err) {
@@ -106,13 +110,18 @@ export default function App() {
   const [isCloudSyncing, setIsCloudSyncing] = useState(false);
   const [supabaseStatus, setSupabaseStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connecting');
 
-  // One-time hydration fix for championArchive and achievementsMen
+  // One-time hydration fix for championArchive, archiveColumns and achievementsMen
   useEffect(() => {
     let needsUpdate = false;
     const nextState = { ...appState };
 
     if (!appState.championArchive || appState.championArchive.length === 0) {
       nextState.championArchive = sampleFullData.championArchive;
+      needsUpdate = true;
+    }
+
+    if (!appState.archiveColumns || appState.archiveColumns.length === 0) {
+      nextState.archiveColumns = sampleFullData.archiveColumns || defaultArchiveColumns;
       needsUpdate = true;
     }
 
@@ -367,7 +376,8 @@ export default function App() {
               nxtShowPlans: mergeShowPlans(cloudData.nxtShowPlans, localData?.nxtShowPlans),
               customMatrices: (localData?.customMatrices && localData.customMatrices.length > 0) ? localData.customMatrices : (cloudData.customMatrices || []),
               ppvTimelines: (localData?.ppvTimelines && localData.ppvTimelines.length > 0) ? localData.ppvTimelines : (cloudData.ppvTimelines || []),
-              matrixColumns: (localData?.matrixColumns && localData.matrixColumns.length > 0) ? localData.matrixColumns : (cloudData.matrixColumns || sampleFullData.matrixColumns)
+              matrixColumns: (localData?.matrixColumns && localData.matrixColumns.length > 0) ? localData.matrixColumns : (cloudData.matrixColumns || sampleFullData.matrixColumns),
+              archiveColumns: (localData?.archiveColumns && localData.archiveColumns.length > 0) ? localData.archiveColumns : ((cloudData.archiveColumns && cloudData.archiveColumns.length > 0) ? cloudData.archiveColumns : defaultArchiveColumns)
             };
 
             setAppState(mergedState);
@@ -823,6 +833,60 @@ export default function App() {
     }));
   };
 
+  const handleAddArchiveColumn = (brand: 'RAW' | 'SmackDown' | 'NXT' | 'Joint', titleName: string) => {
+    const trimmed = titleName.trim();
+    if (!trimmed) return;
+    setAppState((prev) => {
+      const currentCols = (prev.archiveColumns && prev.archiveColumns.length > 0) ? prev.archiveColumns : defaultArchiveColumns;
+      if (currentCols.some(c => c.brand === brand && c.titleName.toLowerCase() === trimmed.toLowerCase())) {
+        return prev;
+      }
+      const newCol: ArchiveColumn = {
+        id: `col-${brand.toLowerCase()}-${Date.now()}`,
+        brand,
+        titleName: trimmed
+      };
+      return {
+        ...prev,
+        archiveColumns: [...currentCols, newCol]
+      };
+    });
+  };
+
+  const handleRenameArchiveColumn = (brand: 'RAW' | 'SmackDown' | 'NXT' | 'Joint', oldTitle: string, newTitle: string) => {
+    const trimmed = newTitle.trim();
+    if (!trimmed || oldTitle === trimmed) return;
+    setAppState((prev) => {
+      const currentCols = (prev.archiveColumns && prev.archiveColumns.length > 0) ? prev.archiveColumns : defaultArchiveColumns;
+      const updatedCols = currentCols.map(c =>
+        (c.brand === brand && c.titleName === oldTitle) ? { ...c, titleName: trimmed } : c
+      );
+      const currentArchive = prev.championArchive || [];
+      const updatedArchive = currentArchive.map(a =>
+        (a.brand === brand && a.titleName === oldTitle) ? { ...a, titleName: trimmed } : a
+      );
+      return {
+        ...prev,
+        archiveColumns: updatedCols,
+        championArchive: updatedArchive
+      };
+    });
+  };
+
+  const handleDeleteArchiveColumn = (brand: 'RAW' | 'SmackDown' | 'NXT' | 'Joint', titleName: string) => {
+    setAppState((prev) => {
+      const currentCols = (prev.archiveColumns && prev.archiveColumns.length > 0) ? prev.archiveColumns : defaultArchiveColumns;
+      const updatedCols = currentCols.filter(c => !(c.brand === brand && c.titleName === titleName));
+      const currentArchive = prev.championArchive || [];
+      const updatedArchive = currentArchive.filter(a => !(a.brand === brand && a.titleName === titleName));
+      return {
+        ...prev,
+        archiveColumns: updatedCols,
+        championArchive: updatedArchive
+      };
+    });
+  };
+
   // Handlers for Rivalries
   const handleAddRivalry = (entry: RivalryEntry) => {
     setAppState((prev) => ({
@@ -1110,8 +1174,12 @@ export default function App() {
         {currentTab === 'champ-list' && (
           <ChampListView
             archive={appState.championArchive || []}
+            archiveColumns={appState.archiveColumns || defaultArchiveColumns}
             onUpdateArchiveEntry={handleUpdateArchiveEntry}
             onDeleteArchiveEntry={handleDeleteArchiveEntry}
+            onAddArchiveColumn={handleAddArchiveColumn}
+            onRenameArchiveColumn={handleRenameArchiveColumn}
+            onDeleteArchiveColumn={handleDeleteArchiveColumn}
           />
         )}
 
