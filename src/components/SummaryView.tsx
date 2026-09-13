@@ -38,7 +38,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
   onUpdatePPVTimeline,
   onDeletePPVTimeline
 }) => {
-  const [matrixBrand, setMatrixBrand] = useState<'All' | 'RAW' | 'SmackDown' | 'NXT'>('All');
+  const [matrixBrand, setMatrixBrand] = useState<'All' | 'RAW' | 'SmackDown' | 'NXT' | 'Joint'>('All');
   
   // Persistent minimized state across tab changes and page reloads
   const [minimized, setMinimized] = useState<Record<string, boolean>>(() => {
@@ -346,15 +346,25 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                 </button>
               )}
               <div className="flex items-center gap-1.5 p-1 bg-slate-950 border border-slate-800 rounded-lg text-xs">
-                {(['All', 'SmackDown', 'RAW', 'NXT'] as const).map((bTab) => (
+                {(['All', 'RAW', 'SmackDown', 'NXT', 'Joint'] as const).map((bTab) => (
                   <button
                     key={bTab}
                     onClick={() => setMatrixBrand(bTab)}
                     className={`px-3 py-1 rounded font-bold transition ${
-                      matrixBrand === bTab ? 'bg-yellow-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'
+                      matrixBrand === bTab
+                        ? bTab === 'RAW'
+                          ? 'bg-red-600 text-white shadow'
+                          : bTab === 'SmackDown'
+                          ? 'bg-blue-600 text-white shadow'
+                          : bTab === 'NXT'
+                          ? 'bg-yellow-500 text-slate-950 shadow'
+                          : bTab === 'Joint'
+                          ? 'bg-purple-600 text-white shadow'
+                          : 'bg-yellow-500 text-slate-950 shadow'
+                        : 'text-slate-400 hover:text-white'
                     }`}
                   >
-                    {bTab === 'All' ? 'All Brands' : bTab}
+                    {bTab === 'All' ? 'All Brands' : bTab === 'Joint' ? 'Joint (3 Brands)' : bTab}
                   </button>
                 ))}
               </div>
@@ -368,32 +378,61 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
               <thead>
                 {/* Super Header Row */}
                 <tr className="border-b-2 border-black font-extrabold uppercase">
-                  {(matrixBrand === 'All' || matrixBrand === 'RAW' || matrixBrand === 'SmackDown') && (
-                    <th colSpan={2} className={`p-1 border-r-2 border-black ${matrixBrand === 'RAW' ? 'bg-[#fca5a5]' : 'bg-[#93c5fd]'}`}></th>
+                  {(matrixBrand === 'All' || matrixBrand === 'RAW' || matrixBrand === 'SmackDown' || matrixBrand === 'Joint') && (
+                    <th
+                      colSpan={2}
+                      className={`p-1 border-r-2 border-black ${
+                        matrixBrand === 'RAW' ? 'bg-[#fca5a5]' :
+                        matrixBrand === 'SmackDown' ? 'bg-[#93c5fd]' :
+                        matrixBrand === 'Joint' ? 'bg-[#c084fc]' :
+                        'bg-[#93c5fd]'
+                      }`}
+                    ></th>
                   )}
                   {(matrixBrand === 'All' || matrixBrand === 'RAW') && (
-                    <th colSpan={(appState.matrixColumns || []).filter(c => c.brand === 'RAW').length} className="p-1 border-r-2 border-black bg-[#fca5a5]">RAW</th>
+                    <th colSpan={(appState.matrixColumns || []).filter(c => c.brand === 'RAW').length} className="p-1 border-r-2 border-black bg-[#fca5a5]">
+                      RAW
+                    </th>
                   )}
                   {(matrixBrand === 'All' || matrixBrand === 'SmackDown') && (
-                    <th colSpan={(appState.matrixColumns || []).filter(c => c.brand === 'SmackDown').length} className="p-1 border-r-2 border-black bg-[#93c5fd]">SmackDown</th>
+                    <th colSpan={(appState.matrixColumns || []).filter(c => c.brand === 'SmackDown').length} className="p-1 border-r-2 border-black bg-[#93c5fd]">
+                      SmackDown
+                    </th>
                   )}
                   {(matrixBrand === 'All' || matrixBrand === 'NXT') && (
                     <>
                       <th colSpan={2} className="p-1 border-r-2 border-black bg-[#fde047]"></th>
-                      <th colSpan={(appState.matrixColumns || []).filter(c => c.brand === 'NXT').length} className="p-1 border-r-2 border-black bg-[#fde047]">NXT</th>
+                      <th colSpan={(appState.matrixColumns || []).filter(c => c.brand === 'NXT').length} className="p-1 border-r-4 border-slate-900 bg-[#fde047]">
+                        NXT
+                      </th>
                     </>
                   )}
                   {(matrixBrand === 'All' || matrixBrand === 'Joint') && (
-                    <th colSpan={(appState.matrixColumns || []).filter(c => c.brand === 'Joint').length} className="p-1 border-black bg-white"></th>
+                    <th
+                      colSpan={(appState.matrixColumns || []).filter(c => c.brand === 'Joint').length}
+                      className="p-1 border-r-2 border-l-4 border-slate-900 bg-[#c084fc] text-purple-950 font-black tracking-wider text-center"
+                    >
+                      Joint (RAW • SmackDown • NXT)
+                    </th>
                   )}
                   <th className="p-1 border-l-2 border-black bg-slate-900 text-white w-10"></th>
                 </tr>
                 {/* Sub Header Row */}
                 <tr className="border-b-2 border-black font-extrabold whitespace-nowrap">
-                  {(matrixBrand === 'All' || matrixBrand === 'RAW' || matrixBrand === 'SmackDown') && (
+                  {(matrixBrand === 'All' || matrixBrand === 'RAW' || matrixBrand === 'SmackDown' || matrixBrand === 'Joint') && (
                     <>
-                      <th className={`p-1.5 w-24 border-r border-black ${matrixBrand === 'RAW' ? 'bg-[#fca5a5]' : 'bg-[#93c5fd]'}`}>Month</th>
-                      <th className={`p-1.5 min-w-[120px] border-r-2 border-black ${matrixBrand === 'RAW' ? 'bg-[#fca5a5]' : 'bg-[#93c5fd]'}`}>PPV</th>
+                      <th className={`p-1.5 w-24 border-r border-black ${
+                        matrixBrand === 'RAW' ? 'bg-[#fca5a5]' :
+                        matrixBrand === 'SmackDown' ? 'bg-[#93c5fd]' :
+                        matrixBrand === 'Joint' ? 'bg-[#c084fc]' :
+                        'bg-[#93c5fd]'
+                      }`}>Month</th>
+                      <th className={`p-1.5 min-w-[120px] border-r-2 border-black ${
+                        matrixBrand === 'RAW' ? 'bg-[#fca5a5]' :
+                        matrixBrand === 'SmackDown' ? 'bg-[#93c5fd]' :
+                        matrixBrand === 'Joint' ? 'bg-[#c084fc]' :
+                        'bg-[#93c5fd]'
+                      }`}>PPV</th>
                     </>
                   )}
                   
@@ -405,6 +444,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                     if (col.brand === 'Joint') bgClass = 'bg-[#c084fc]';
 
                     const isFirstNxt = (matrixBrand === 'All' || matrixBrand === 'NXT') && col.id === (appState.matrixColumns || []).find(c => c.brand === 'NXT')?.id;
+                    const isFirstJoint = (matrixBrand === 'All') && col.id === (appState.matrixColumns || []).find(c => c.brand === 'Joint')?.id;
 
                     return (
                       <React.Fragment key={col.id}>
@@ -414,7 +454,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                             <th className="p-1.5 min-w-[120px] border-r-2 border-black bg-[#fde047]">PPV</th>
                           </>
                         )}
-                        <th className={`p-1.5 min-w-[120px] border-r border-black relative group ${bgClass}`}>
+                        <th className={`p-1.5 min-w-[120px] border-r border-black relative group ${bgClass} ${isFirstJoint ? 'border-l-4 border-slate-900' : ''}`}>
                           <div className="flex items-center justify-center gap-1">
                             <span>{col.titleName}</span>
                             <button onClick={() => handleDeleteColumn(col.id)} className="hidden group-hover:flex items-center justify-center bg-red-600 hover:bg-red-700 text-white w-4 h-4 rounded-full text-[10px] absolute right-1" title="Delete Column">✕</button>
@@ -433,12 +473,22 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                   const isWM = row.mainPle === 'WrestleMania';
                   return (
                     <tr key={row.id || `${row.month}-${idx}`} className={`transition ${isWM ? 'border-b-4 border-black' : ''}`}>
-                      {(matrixBrand === 'All' || matrixBrand === 'RAW' || matrixBrand === 'SmackDown') && (
+                      {(matrixBrand === 'All' || matrixBrand === 'RAW' || matrixBrand === 'SmackDown' || matrixBrand === 'Joint') && (
                         <>
-                          <td className={`border-r border-black ${matrixBrand === 'RAW' ? 'bg-[#fca5a5]' : 'bg-[#93c5fd]'}`}>
+                          <td className={`border-r border-black ${
+                            matrixBrand === 'RAW' ? 'bg-[#fca5a5]' :
+                            matrixBrand === 'SmackDown' ? 'bg-[#93c5fd]' :
+                            matrixBrand === 'Joint' ? 'bg-[#c084fc]' :
+                            'bg-[#93c5fd]'
+                          }`}>
                             <input value={row.month} onChange={(e) => handleCellChange(matrix.key, idx, 'month', e.target.value)} className="w-full bg-transparent outline-none text-center p-1.5 focus:bg-white/30" />
                           </td>
-                          <td className={`border-r-2 border-black ${matrixBrand === 'RAW' ? 'bg-[#fca5a5]' : 'bg-[#93c5fd]'}`}>
+                          <td className={`border-r-2 border-black ${
+                            matrixBrand === 'RAW' ? 'bg-[#fca5a5]' :
+                            matrixBrand === 'SmackDown' ? 'bg-[#93c5fd]' :
+                            matrixBrand === 'Joint' ? 'bg-[#c084fc]' :
+                            'bg-[#93c5fd]'
+                          }`}>
                             <input value={row.mainPle || ''} onChange={(e) => handleCellChange(matrix.key, idx, 'mainPle', e.target.value)} className="w-full bg-transparent outline-none text-center p-1.5 focus:bg-white/30" />
                           </td>
                         </>
@@ -452,6 +502,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                         if (col.brand === 'Joint') bgClass = 'bg-[#c084fc]';
 
                         const isFirstNxt = (matrixBrand === 'All' || matrixBrand === 'NXT') && col.id === (appState.matrixColumns || []).find(c => c.brand === 'NXT')?.id;
+                        const isFirstJoint = (matrixBrand === 'All') && col.id === (appState.matrixColumns || []).find(c => c.brand === 'Joint')?.id;
 
                         return (
                           <React.Fragment key={col.id}>
@@ -465,7 +516,7 @@ export const SummaryView: React.FC<SummaryViewProps> = ({
                                 </td>
                               </>
                             )}
-                            <td className={`border-r border-black ${bgClass}`}>
+                            <td className={`border-r border-black ${bgClass} ${isFirstJoint ? 'border-l-4 border-slate-900' : ''}`}>
                               <input 
                                 value={row.champions?.[col.id] || ''} 
                                 onChange={(e) => handleCellChange(matrix.key, idx, `champions.${col.id}`, e.target.value)} 
