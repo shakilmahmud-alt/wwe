@@ -36,8 +36,25 @@ export const ChampListView: React.FC<ChampListViewProps> = ({
   onDeleteArchiveColumn
 }) => {
   const [selectedBrandFilter, setSelectedBrandFilter] = useState<'All' | 'RAW' | 'SmackDown' | 'NXT' | 'Joint'>('All');
-  const [minRows, setMinRows] = useState<number>(30); // Default to 30 visible rows for a tall spreadsheet
+  const [extraRows, setExtraRows] = useState<Record<string, number>>({});
   const [savedNotification, setSavedNotification] = useState<string | null>(null);
+
+  const addBrandRows = (brand: string, count: number = 1) => {
+    setExtraRows(prev => ({
+      ...prev,
+      [brand]: (prev[brand] || 0) + count
+    }));
+  };
+
+  const addGlobalRows = (count: number = 10) => {
+    setExtraRows(prev => {
+      const updated = { ...prev };
+      (['RAW', 'SmackDown', 'NXT', 'Joint'] as const).forEach(b => {
+        updated[b] = (updated[b] || 0) + count;
+      });
+      return updated;
+    });
+  };
 
   // Add Column Modal State
   const [isAddColumnModalOpen, setIsAddColumnModalOpen] = useState(false);
@@ -230,8 +247,22 @@ export const ChampListView: React.FC<ChampListViewProps> = ({
       return acc;
     }, {} as Record<string, ArchiveEntry[]>);
 
-    // Calculate maximum rows needed, ensuring at least `minRows` (default 30)
-    const currentMax = Math.max(...titles.map(t => grouped[t]?.length || 0), minRows);
+    // Find the maximum row index across all titles in this brand where text/data is present
+    const maxFilledOrder = titles.reduce((max, title) => {
+      const entries = grouped[title] || [];
+      const filled = entries.filter(a =>
+        (a.who && a.who.trim() !== '') ||
+        (a.times !== undefined && a.times !== null && String(a.times).trim() !== '') ||
+        (a.reign !== undefined && a.reign !== null && String(a.reign).trim() !== '') ||
+        (a.month !== undefined && a.month !== null && String(a.month).trim() !== '')
+      );
+      const highest = filled.reduce((m, a) => Math.max(m, a.order), 0);
+      return Math.max(max, highest);
+    }, 0);
+
+    // Total rows to render: exact filled rows, plus any manually added extra rows. If brand is empty, show at least 1 row.
+    const brandExtra = extraRows[brand] || 0;
+    const currentMax = Math.max(maxFilledOrder + brandExtra, maxFilledOrder > 0 ? maxFilledOrder : 1);
 
     const maxStats = titles.reduce((acc, title) => {
       acc[title] = {
@@ -265,16 +296,24 @@ export const ChampListView: React.FC<ChampListViewProps> = ({
             </button>
 
             <button
-              onClick={() => setMinRows(prev => prev + 10)}
+              onClick={() => addBrandRows(brand, 1)}
               className="px-2.5 py-1 bg-black/40 hover:bg-black/60 text-white rounded text-xs font-bold flex items-center gap-1 border border-white/20 transition shadow"
-              title="Add 10 more rows to this spreadsheet"
+              title={`Add 1 row to ${brand} spreadsheet`}
+            >
+              <Plus className="w-3.5 h-3.5" /> +1 Row
+            </button>
+
+            <button
+              onClick={() => addBrandRows(brand, 10)}
+              className="px-2.5 py-1 bg-black/40 hover:bg-black/60 text-white rounded text-xs font-bold flex items-center gap-1 border border-white/20 transition shadow"
+              title={`Add 10 rows to ${brand} spreadsheet`}
             >
               <Plus className="w-3.5 h-3.5" /> +10 Rows
             </button>
           </div>
         </div>
 
-        <div className="w-full max-h-[70vh] overflow-y-auto custom-scrollbar">
+        <div className="w-full">
           <table className={`w-full text-center text-xs ${bgColorClass} whitespace-nowrap border-collapse`}>
             <thead>
               {/* Row 1: Championship Names (Super Header) with Edit / Delete actions */}
@@ -580,7 +619,7 @@ export const ChampListView: React.FC<ChampListViewProps> = ({
           </button>
 
           <button
-            onClick={() => setMinRows(prev => prev + 10)}
+            onClick={() => addGlobalRows(10)}
             className="px-3 py-1.5 bg-purple-700 hover:bg-purple-600 text-white font-bold text-xs rounded-lg shadow border border-purple-500 flex items-center gap-1.5 transition"
             title="Add 10 more rows to all spreadsheets"
           >
